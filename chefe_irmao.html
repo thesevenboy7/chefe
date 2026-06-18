@@ -801,7 +801,7 @@ const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','A
 const MONTHS_SHORT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
 
-const STORAGE_KEY = 'chefe_irmao_v2';
+const STORAGE_KEY = 'chefe_irmao_v3';
 
 const td0 = new Date().toISOString().slice(0,7); // YYYY-MM
 const td1 = new Date().toISOString().slice(0,10); // today
@@ -809,14 +809,7 @@ const yd = new Date(new Date().setDate(new Date().getDate()-1)).toISOString().sl
 const yd2 = new Date(new Date().setDate(new Date().getDate()-2)).toISOString().slice(0,10);
 
 const DEMO_DATA = {
-  habits: {
-    [td1]: {acorda:true, cama:true, silencio:true, agua_rosto:false,
-             cafe:true, leitura:false, journal:true,
-             foco:false, decisao:false, entrega:false,
-             estudo:false, skill:false,
-             alimentacao:true, agua:false, exercicio:false, scroll:false,
-             revisao:false, gratidao:false, telas:false, dorme:false}
-  },
+  habits: {},
   hist: [
     {date: yd2, pct: 72},
     {date: yd,  pct: 58},
@@ -878,37 +871,12 @@ const DEFAULT_HABITS = {
     {key:'enc',      label:'Encerramento',  badge:'Noite',  badgeColor:'var(--purple)'},
   ],
   items: {
-    fundacao: [
-      {id:'acorda',    t:'Acordei no horário certo',      w:'Horário fixo cria disciplina automática.',         tag:'m'},
-      {id:'cama',      t:'Arrumei a cama',                w:'Primeira vitória do dia.',                         tag:'m'},
-      {id:'silencio',  t:'5 min silêncio / meditação',   w:'Âncora mental antes do caos começar.',             tag:'m'},
-    ],
-    mente: [
-      {id:'cafe',      t:'Café da manhã de qualidade',   w:'Combustível certo para o dia inteiro.',            tag:'m'},
-      {id:'leitura',   t:'Leitura (10 páginas)',          w:'1 ideia nova por dia = 365 por ano.',              tag:'m'},
-      {id:'journal',   t:'3 prioridades escritas',        w:'Quem não planeja o dia, reage ao dia dos outros.', tag:'m'},
-    ],
-    trabalho: [
-      {id:'foco',      t:'Bloco de foco profundo (90min)',w:'Sem notificação. Uma tarefa. Foco total.',          tag:'m'},
-      {id:'decisao',   t:'1 decisão difícil tomada',     w:'Adiar decide também. Decida conscientemente.',      tag:'m'},
-      {id:'entrega',   t:'Entrega principal feita',      w:'O dia só foi produtivo se algo foi entregue.',      tag:'m'},
-    ],
-    dev: [
-      {id:'estudo',    t:'Estudo / curso (30min)',        w:'Habilidade nova = valor novo no mercado.',          tag:'det'},
-      {id:'skill',     t:'Praticar habilidade específica',w:'Repetição deliberada. Não apenas consumir.',        tag:'det'},
-    ],
-    corpo: [
-      {id:'alimentacao',t:'Alimentação saudável',        w:'Você é o que come.',                                tag:'f'},
-      {id:'agua',      t:'2L de água no dia',             w:'Hidratação afeta cognição diretamente.',            tag:'f'},
-      {id:'exercicio', t:'Exercício / movimento (30min+)',w:'Corpo parado é mente parada.',                      tag:'f'},
-      {id:'scroll',    t:'Zero scrolling sem intenção',  w:'Atenção é o recurso mais escasso que tens.',        tag:'f'},
-    ],
-    enc: [
-      {id:'revisao',   t:'Revisão do dia (2min)',         w:'O que foi bem? O que mudar amanhã?',                tag:'n'},
-      {id:'gratidao',  t:'3 coisas pelas quais sou grato',w:'Gratidão muda o que enxergas.',                    tag:'n'},
-      {id:'telas',     t:'Telas off 30min antes de dormir',w:'Sono de qualidade começa aqui.',                  tag:'n'},
-      {id:'dorme',     t:'Dormir no horário certo',       w:'Sono é performance. Não é preguiça.',               tag:'n'},
-    ],
+    fundacao: [],
+    mente: [],
+    trabalho: [],
+    dev: [],
+    corpo: [],
+    enc: [],
   }
 };
 
