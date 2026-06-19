@@ -6,8 +6,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Chefe">
-<title>Chefe — Irmão</title>
+<title>Chefe — Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" onload="initGoogleAuth()" async defer></script>
 <style>
 :root {
   --bg: #0c0c0e;
@@ -18,9 +19,9 @@
   --text: #f0f0f0;
   --muted: #666;
   --muted2: #444;
-  --accent: #4da6ff;
-  --accent-dim: rgba(77,166,255,0.15);
-  --accent-dim2: rgba(77,166,255,0.07);
+  --accent: #c8f542;
+  --accent-dim: rgba(200,245,66,0.12);
+  --accent-dim2: rgba(200,245,66,0.06);
   --blue: #4da6ff;
   --blue-dim: rgba(77,166,255,0.12);
   --purple: #a78bfa;
@@ -461,6 +462,44 @@ html, body {
 }
 ::-webkit-scrollbar { width:0; }
 
+/* HABIT EDIT MODE */
+.habit-edit-toggle {
+  font-size:10px; font-weight:700; padding:5px 12px;
+  border-radius:100px; border:1px solid var(--border2);
+  background:transparent; color:var(--muted);
+  cursor:pointer; font-family:'DM Mono',monospace;
+  letter-spacing:0.04em; transition:all .15s;
+}
+.habit-edit-toggle.on { border-color:var(--accent); color:var(--accent); }
+.habit-del-btn {
+  background:none; border:none; color:var(--red);
+  cursor:pointer; font-size:16px; padding:0 4px;
+  flex-shrink:0; opacity:0.7;
+}
+.habit-add-row {
+  display:flex; gap:6px; margin-top:10px; padding-top:10px;
+  border-top:1px solid var(--border);
+}
+.habit-add-inp {
+  flex:1; font-size:13px; padding:8px 10px;
+  border-radius:var(--r-sm); border:1px solid var(--border2);
+  background:var(--surface2); color:var(--text);
+  font-family:'Syne',sans-serif;
+}
+.habit-add-inp:focus { outline:none; border-color:var(--accent); }
+.habit-add-btn {
+  font-size:18px; font-weight:700; padding:8px 14px;
+  border-radius:var(--r-sm); border:none;
+  background:var(--accent); color:#0c0c0e; cursor:pointer;
+}
+.habit-edit-txt {
+  font-size:13px; color:var(--text); flex:1;
+  background:var(--surface2); border:1px solid var(--border2);
+  border-radius:var(--r-sm); padding:5px 8px;
+  font-family:'Syne',sans-serif; line-height:1.4;
+}
+.habit-edit-txt:focus { outline:none; border-color:var(--accent); }
+
 /* GCAL CONNECT */
 .gcal-banner {
   background:var(--surface2); border:1px solid var(--blue-dim);
@@ -473,40 +512,6 @@ html, body {
   border-radius:var(--r-sm); border:none;
   background:var(--blue); color:#fff; cursor:pointer;
   font-family:'Syne',sans-serif; white-space:nowrap;
-}
-
-/* HABIT EDIT */
-.habit-edit-toggle {
-  font-size:11px; font-weight:600; padding:6px 12px;
-  border-radius:var(--r-sm); border:1px solid var(--border2);
-  background:transparent; color:var(--muted); cursor:pointer;
-  font-family:'Syne',sans-serif; letter-spacing:0.04em;
-  transition:all .2s;
-}
-.habit-edit-toggle.active { border-color:var(--accent); color:var(--accent); }
-.habit-del-btn {
-  background:var(--red-dim); border:none; color:var(--red);
-  border-radius:6px; width:24px; height:24px; font-size:12px;
-  cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center;
-}
-.habit-add-row {
-  display:flex; gap:8px; margin-top:10px; padding-top:10px;
-  border-top:1px solid var(--border);
-}
-.habit-add-inp {
-  flex:1; background:var(--surface2); border:1px solid var(--border2);
-  border-radius:var(--r-sm); padding:8px 10px; color:var(--text);
-  font-family:'Syne',sans-serif; font-size:13px; outline:none;
-}
-.habit-add-btn {
-  background:var(--accent); border:none; color:#0c0c0e;
-  border-radius:var(--r-sm); width:34px; font-size:18px; font-weight:700;
-  cursor:pointer; flex-shrink:0;
-}
-.habit-edit-txt {
-  background:var(--surface2); border:1px solid var(--border2);
-  border-radius:6px; padding:6px 8px; color:var(--text);
-  font-family:'Syne',sans-serif; font-size:13px; outline:none; display:block;
 }
 </style>
 </head>
@@ -556,6 +561,7 @@ html, body {
   <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
     <button class="habit-edit-toggle" id="habit-edit-btn" onclick="toggleHabitEdit()">Editar hábitos</button>
   </div>
+
   <div id="habit-sections"></div>
 </div>
 
@@ -617,9 +623,9 @@ html, body {
 
   <!-- KPIs -->
   <div class="fin-kpi-grid">
-    <div class="fin-kpi"><div class="fin-kpi-v pos" id="f-receita">€0</div><div class="fin-kpi-l">Receita</div></div>
-    <div class="fin-kpi"><div class="fin-kpi-v" id="f-despesa-v">€0</div><div class="fin-kpi-l">Despesas</div></div>
-    <div class="fin-kpi" id="f-saldo-card"><div class="fin-kpi-v" id="f-saldo">€0</div><div class="fin-kpi-l">Saldo</div><div class="fin-kpi-sub" id="f-taxa"></div></div>
+    <div class="fin-kpi"><div class="fin-kpi-v pos" id="f-receita">R$0</div><div class="fin-kpi-l">Receita</div></div>
+    <div class="fin-kpi"><div class="fin-kpi-v" id="f-despesa-v">R$0</div><div class="fin-kpi-l">Despesas</div></div>
+    <div class="fin-kpi" id="f-saldo-card"><div class="fin-kpi-v" id="f-saldo">R$0</div><div class="fin-kpi-l">Saldo</div><div class="fin-kpi-sub" id="f-taxa"></div></div>
     <div class="fin-kpi"><div class="fin-kpi-v" id="f-maior-cat">—</div><div class="fin-kpi-l">Maior gasto</div><div class="fin-kpi-sub" id="f-maior-val"></div></div>
   </div>
 
@@ -634,7 +640,7 @@ html, body {
     <div class="card-lbl">Novo lançamento</div>
     <div class="lan-form-grid">
       <input class="lan-inp lan-form-full" id="lan-desc" placeholder="Descrição (ex: Academia, Mercado...)" />
-      <input class="lan-inp" id="lan-val" type="number" placeholder="Valor €" step="0.01"/>
+      <input class="lan-inp" id="lan-val" type="number" placeholder="Valor R$" step="0.01"/>
       <input class="lan-inp" id="lan-data" type="date"/>
       <select class="lan-sel" id="lan-tipo">
         <option value="Despesa">Despesa</option>
@@ -705,11 +711,71 @@ html, body {
     <div id="lan-list"></div>
     <div class="fin-total-row">
       <span>Total despesas</span>
-      <span id="lan-total" style="font-weight:700;color:var(--red);font-family:'DM Mono',monospace">€0</span>
+      <span id="lan-total" style="font-weight:700;color:var(--red);font-family:'DM Mono',monospace">R$0</span>
     </div>
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════ MANTRA -->
+<div id="sec-mantra" class="sec">
+  <div class="sec-title">Mantra</div>
+  <div class="sec-sub">Leia em voz alta após a oração. Declaração de identidade.</div>
+  <div class="card">
+    <div class="mantra-section">
+      <div class="mantra-cat-lbl">Responsabilidade</div>
+      <div class="mantra-line">Eu sou responsável por tudo na minha vida.</div>
+      <div class="mantra-line">Nada nem ninguém controla meu destino além de mim e de Deus.</div>
+    </div>
+    <div class="mantra-section">
+      <div class="mantra-cat-lbl">Fé</div>
+      <div class="mantra-line">Jesus Cristo é minha fundação.</div>
+      <div class="mantra-line">Eu busco clareza espiritual todos os dias.</div>
+      <div class="mantra-line">Meu Salvador conduz minha mente, meu corpo e minhas decisões.</div>
+    </div>
+    <div class="mantra-section">
+      <div class="mantra-cat-lbl">Disciplina</div>
+      <div class="mantra-line">Eu vivo pela disciplina, não pelo sentimento.</div>
+      <div class="mantra-line">Eu faço o que precisa ser feito, independente do meu humor.</div>
+    </div>
+    <div class="mantra-section">
+      <div class="mantra-cat-lbl">Corpo & Caráter</div>
+      <div class="mantra-line">Eu sou forte no corpo, na mente e no caráter.</div>
+      <div class="mantra-line">Eu treino, estudo e ajo para me tornar um homem sólido.</div>
+      <div class="mantra-line">Eu evoluo todos os dias.</div>
+    </div>
+    <div class="mantra-section">
+      <div class="mantra-cat-lbl">Habilidades</div>
+      <div class="mantra-line">Desenvolvo vendas, gestão e habilidades que constroem poder e responsabilidade.</div>
+    </div>
+    <div class="mantra-section">
+      <div class="mantra-cat-lbl">Família</div>
+      <div class="mantra-line">Minha família é meu alicerce.</div>
+      <div class="mantra-line">Eu honro minha mãe, minha mulher, meus irmãos e quem anda comigo.</div>
+      <div class="mantra-line">Meu caráter começa em casa.</div>
+    </div>
+    <div class="mantra-section">
+      <div class="mantra-cat-lbl">Riqueza</div>
+      <div class="mantra-line">Eu construo riqueza, não aparência.</div>
+      <div class="mantra-line">Primeiro caixa, depois patrimônio, depois liberdade.</div>
+      <div class="mantra-line">Luxo só quando minha base estiver firme.</div>
+    </div>
+    <div class="mantra-section">
+      <div class="mantra-cat-lbl">Dor & Foco</div>
+      <div class="mantra-line">Eu não fujo da dor necessária.</div>
+      <div class="mantra-line">A dor me fortalece, me disciplina e me separa da média.</div>
+      <div class="mantra-line">Eu protejo minha mente.</div>
+      <div class="mantra-line">Recuso vícios, distrações e tudo que enfraquece meu foco.</div>
+    </div>
+    <div class="mantra-section" style="margin-bottom:0">
+      <div class="mantra-cat-lbl">Visão</div>
+      <div class="mantra-line">Eu penso em longo prazo.</div>
+      <div class="mantra-line">Eu jogo o jogo que poucos têm coragem de jogar.</div>
+      <div class="mantra-line">Eu não sou a média.</div>
+      <div class="mantra-line">Eu ajo diferente, penso diferente e vivo diferente.</div>
+      <div class="mantra-line" style="color:var(--accent)">Eu estou construindo, todos os dias, o homem que serei aos 30.</div>
+    </div>
+  </div>
+</div>
 
 </div><!-- /content -->
 
@@ -742,6 +808,12 @@ html, body {
       <circle cx="11" cy="11" r="8"/><path d="M11 7v1.5M11 13.5V15M8.5 9.5C8.5 8.4 9.6 8 11 8s2.5.9 2.5 2c0 2-4 2-4 4 0 1.1 1.1 2 2.5 2s2.5-.9 2.5-2"/>
     </svg>
     <span class="bn-lbl">Fin.</span>
+  </button>
+  <button class="bn-btn" onclick="showSec('mantra')" id="bn-mantra">
+    <svg class="bn-icon" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8">
+      <path d="M11 3l2 6h6l-5 4 2 6-5-4-5 4 2-6-5-4h6z"/>
+    </svg>
+    <span class="bn-lbl">Mantra</span>
   </button>
 </div>
 
@@ -800,83 +872,50 @@ const DAYS_FULL = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sába
 const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const MONTHS_SHORT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
-
-const STORAGE_KEY = 'chefe_irmao_v3';
-
-const td0 = new Date().toISOString().slice(0,7); // YYYY-MM
-const td1 = new Date().toISOString().slice(0,10); // today
-const yd = new Date(new Date().setDate(new Date().getDate()-1)).toISOString().slice(0,10); // yesterday
-const yd2 = new Date(new Date().setDate(new Date().getDate()-2)).toISOString().slice(0,10);
-
-const DEMO_DATA = {
-  habits: {},
-  hist: [
-    {date: yd2, pct: 72},
-    {date: yd,  pct: 58},
-    {date: td1, pct: 0},
-  ],
-  agenda: {
-    [td1]: [
-      {id:1001, title:'Reunião com cliente — Projeto Site', time:'09:00', cal:'work', done:false, checklist:[
-        {t:'Preparar apresentação', done:true},
-        {t:'Confirmar horário com cliente', done:true},
-        {t:'Testar demo ao vivo', done:false},
-        {t:'Enviar proposta após reunião', done:false},
-      ]},
-      {id:1002, title:'Almoço com João', time:'12:30', cal:'pessoal', done:false, checklist:[]},
-      {id:1003, title:'Entrega relatório mensal', time:'17:00', cal:'work', done:false, checklist:[
-        {t:'Consolidar números de abril', done:false},
-        {t:'Revisar com gestor', done:false},
-        {t:'Enviar por e-mail', done:false},
-      ]},
-      {id:1004, title:'Academia', time:'19:00', cal:'pessoal', done:false, checklist:[]},
-    ],
-  },
-  tasks: {
-    work: [
-      {id:'TW1', title:'Finalizar proposta comercial cliente ABC', createdDate: td1, done:false, doneDate:null},
-      {id:'TW2', title:'Ligar para fornecedor sobre entrega atrasada', createdDate: yd, done:false, doneDate:null},
-      {id:'TW3', title:'Atualizar planilha de clientes', createdDate: yd2, done:false, doneDate:null},
-      {id:'TW4', title:'Responder e-mails pendentes', createdDate: td1, done:true, doneDate:td1},
-    ],
-    pessoal: [
-      {id:'TP1', title:'Renovar CNH (vence em julho)', createdDate: yd, done:false, doneDate:null},
-      {id:'TP2', title:'Comprar presente aniversário da mãe', createdDate: td1, done:false, doneDate:null},
-      {id:'TP3', title:'Marcar consulta médica', createdDate: yd2, done:false, doneDate:null},
-    ],
-  },
-  fin: {
-    lan: [
-      {id:2001, desc:'Salário',              val:2200, tipo:'Receita', cat:'Salário',  pag:'Transferência',    obs:'', data:td1.slice(0,8)+'01', mes:td0},
-      {id:2002, desc:'Renda extra freelance',val:450,  tipo:'Receita', cat:'Freelance',pag:'Transferência',    obs:'Projeto design', data:td1.slice(0,8)+'08', mes:td0},
-      {id:2003, desc:'Aluguel',              val:850,  tipo:'Despesa', cat:'Aluguel',  pag:'Transferência',    obs:'', data:td1.slice(0,8)+'02', mes:td0},
-      {id:2004, desc:'Supermercado Lidl',    val:180,  tipo:'Despesa', cat:'Mercado',  pag:'Cartão de Débito', obs:'', data:td1.slice(0,8)+'04', mes:td0},
-      {id:2005, desc:'Ginásio',              val:45,   tipo:'Despesa', cat:'Academia', pag:'Cartão de Crédito',obs:'Mensalidade', data:td1.slice(0,8)+'05', mes:td0},
-      {id:2006, desc:'Uber viagem aeroporto',val:28,   tipo:'Despesa', cat:'Uber/99',  pag:'Cartão de Crédito',obs:'', data:td1.slice(0,8)+'07', mes:td0},
-      {id:2007, desc:'Restaurante com amigos',val:55,  tipo:'Despesa', cat:'Comer Fora',pag:'Cartão de Crédito',obs:'', data:td1.slice(0,8)+'10', mes:td0},
-      {id:2008, desc:'Netflix + Spotify',    val:22,   tipo:'Despesa', cat:'Assinaturas',pag:'Cartão de Crédito',obs:'', data:td1.slice(0,8)+'12', mes:td0},
-      {id:2009, desc:'Farmácia',             val:18,   tipo:'Despesa', cat:'Farmácia', pag:'Dinheiro',         obs:'', data:td1.slice(0,8)+'14', mes:td0},
-      {id:2010, desc:'Saída noturna',        val:65,   tipo:'Despesa', cat:'Bar/Balada',pag:'Dinheiro',        obs:'', data:td1.slice(0,8)+'17', mes:td0},
-    ],
-  },
-};
-
 const DEFAULT_HABITS = {
   sections: [
-    {key:'fundacao', label:'Fundação',      badge:'Manhã',  badgeColor:'var(--accent)'},
-    {key:'mente',    label:'Mente',         badge:'',       badgeColor:''},
-    {key:'trabalho', label:'Trabalho',      badge:'',       badgeColor:''},
-    {key:'dev',      label:'Desenvolvimento',badge:'',      badgeColor:''},
-    {key:'corpo',    label:'Corpo & Saúde', badge:'',       badgeColor:''},
-    {key:'enc',      label:'Encerramento',  badge:'Noite',  badgeColor:'var(--purple)'},
+    {key:'fundacao', label:'Fundação', badge:'Manhã', badgeColor:'var(--accent)'},
+    {key:'mente',    label:'Mente',    badge:'',      badgeColor:''},
+    {key:'trabalho', label:'Trabalho', badge:'',      badgeColor:''},
+    {key:'dev',      label:'Desenvolvimento', badge:'DET', badgeColor:'var(--blue)'},
+    {key:'corpo',    label:'Corpo & Saúde', badge:'', badgeColor:''},
+    {key:'enc',      label:'Encerramento', badge:'Noite', badgeColor:'var(--purple)'},
   ],
   items: {
-    fundacao: [],
-    mente: [],
-    trabalho: [],
-    dev: [],
-    corpo: [],
-    enc: [],
+    fundacao: [
+      {id:'acorda',     t:'Acordei às 08:30',                        w:'Horário fixo. Não negocia.',                    tag:'m'},
+      {id:'cama',       t:'Arrumei a cama',                          w:'Primeira vitória do dia.',                      tag:'m'},
+      {id:'oracao',     t:'Oração (2min+)',                          w:'Âncora do dia. Antes de qualquer coisa.',       tag:'m'},
+      {id:'agua_rosto', t:'Água gelada no rosto',                    w:'Sai do modo sonolento imediatamente.',          tag:'m'},
+    ],
+    mente: [
+      {id:'cafe',       t:'Fez o café',                              w:'Ritual que sinaliza início da manhã produtiva.',tag:'m'},
+      {id:'vitaminas',  t:'Vitaminas (B12 + Creatina + D)',          w:'Substrato cognitivo do dia.',                   tag:'m'},
+      {id:'leitura',    t:'Leitura com caderno (10 páginas)',        w:'Caderno aberto. 1 lição anotada.',              tag:'m'},
+    ],
+    trabalho: [
+      {id:'duolingo',   t:'Duolingo 10-15 min',                     w:'Aquecimento linguístico antes do modo profundo.',tag:'m'},
+      {id:'ritual',     t:'Notebook aberto — modo profundo',        w:'Este gesto é o interruptor. Liga o foco.',      tag:'m'},
+      {id:'profundo',   t:'Trabalho profundo LF Services (90min+)', w:'Sem interrupção. Uma tarefa principal.',        tag:'m'},
+      {id:'decisao',    t:'1 decisão importante tomada',            w:'A voz que adia é o governador mental. Decida.', tag:'m'},
+    ],
+    dev: [
+      {id:'shadowing',  t:'Shadowing inglês 10min em voz alta',     w:'Repete frases. Pronúncia + fluência.',          tag:'det'},
+      {id:'det',        t:'Prática DET 30min',                      w:'S1-2: Read+Listen. S3-4: Write+Speak.',         tag:'det'},
+    ],
+    corpo: [
+      {id:'alimentacao',t:'Alimentação limpa',                      w:'Combustível, não prazer.',                      tag:'f'},
+      {id:'agua',       t:'2L de água no dia',                      w:'Inegociável.',                                  tag:'f'},
+      {id:'scroll',     t:'Zero scrolling sem intenção',            w:'Não é lazer, é sequestro.',                     tag:'f'},
+      {id:'porn',       t:'Zero pornografia',                       w:'Sem negociação.',                               tag:'f'},
+    ],
+    enc: [
+      {id:'biblia',       t:'Leitura da Bíblia',                    w:'Encerra o dia com a mesma âncora que o abriu.', tag:'n'},
+      {id:'oracao_noite', t:'Oração de agradecimento',              w:'Gratidão pelo dia. Entrega do dia seguinte.',   tag:'n'},
+      {id:'revisao',      t:'Revisão: acerto / falha / ajuste',     w:'Sem reflexão o sistema não aprende. 2min.',     tag:'n'},
+      {id:'telas',        t:'Telas off 30min antes de dormir',      w:'Sono de qualidade começa aqui.',                tag:'n'},
+      {id:'dorme',        t:'Dormindo às 00:30',                    w:'Horário fixo.',                                 tag:'n'},
+    ],
   }
 };
 
@@ -889,7 +928,7 @@ let appState = {
 };
 
 try {
-  const s = localStorage.getItem(STORAGE_KEY);
+  const s = localStorage.getItem('chefe_v2');
   if (s) {
     const p = JSON.parse(s);
     Object.assign(appState, p);
@@ -898,17 +937,25 @@ try {
     if (!appState.tasks.pessoal) appState.tasks.pessoal = [];
     if (!appState.agenda) appState.agenda = {};
     if (!appState.fin) appState.fin = {lan:[]};
-  } else {
-    appState = JSON.parse(JSON.stringify(DEMO_DATA));
-    appState.habitsDef = JSON.parse(JSON.stringify(DEFAULT_HABITS));
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
   }
 } catch(e) {}
 
 if (!appState.habitsDef) appState.habitsDef = JSON.parse(JSON.stringify(DEFAULT_HABITS));
 
+// migrate old data
+try {
+  const old = localStorage.getItem('chefe_app');
+  if (old && !localStorage.getItem('chefe_v2')) {
+    const p = JSON.parse(old);
+    if (p.habits) appState.habits = p.habits;
+    if (p.hist) appState.hist = p.hist;
+    if (p.fin) appState.fin = p.fin;
+    save();
+  }
+} catch(e) {}
+
 function save() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(appState)); } catch(e) {}
+  try { localStorage.setItem('chefe_v2', JSON.stringify(appState)); } catch(e) {}
 }
 function today() { return new Date().toISOString().slice(0,10); }
 function todayDow() { return new Date().getDay(); }
@@ -934,7 +981,8 @@ function renderHeader() {
   const days = ['DOM','SEG','TER','QUA','QUI','SEX','SAB'];
   const months = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
   document.getElementById('hdr-date').innerHTML = `${days[d.getDay()]}<br>${d.getDate()} ${months[d.getMonth()]}`;
-  document.getElementById('hoje-badge').textContent = days[d.getDay()];
+  const badge = document.getElementById('hoje-badge');
+  if (badge) badge.textContent = days[d.getDay()];
 }
 
 // ═══════════════════════════════════════════════════════ HOJE (HÁBITOS)
@@ -984,6 +1032,7 @@ function renderHabitSections() {
   container.innerHTML = '';
   const def = appState.habitsDef;
   def.sections.forEach(sec => {
+    const items = def.items[sec.key] || [];
     const card = document.createElement('div');
     card.className = 'card';
     const badgeHtml = sec.badge ? `<span style="color:${sec.badgeColor};font-size:10px;font-weight:600">${sec.badge}</span>` : '';
@@ -996,8 +1045,10 @@ function renderHabitSections() {
 function renderHSection(key) {
   const el = document.getElementById('hsec-' + key); if (!el) return;
   el.innerHTML = '';
-  const items = appState.habitsDef.items[key] || [];
+  const def = appState.habitsDef;
+  const items = def.items[key] || [];
   if (!appState.habits[hojeDate]) appState.habits[hojeDate] = {};
+
   items.forEach((h, i) => {
     const done = !!appState.habits[hojeDate][h.id];
     const row = document.createElement('div');
@@ -1006,10 +1057,12 @@ function renderHSection(key) {
       row.onclick = () => {
         appState.habits[hojeDate][h.id] = !appState.habits[hojeDate][h.id];
         save(); renderHSection(key); updateHMetrics(); renderWeekStrip();
+        scheduleHabitsToSheets();
       };
     }
     const tagMap = {m:'tag-m M', t:'tag-t T', n:'tag-n N', f:'tag-f F', det:'tag-det DET'};
     const [tc, tl] = (tagMap[h.tag] || 'tag-f F').split(' ');
+
     if (habitEditMode) {
       row.innerHTML = `
         <button class="habit-del-btn" onclick="delHabit('${key}',${i})">✕</button>
@@ -1023,6 +1076,7 @@ function renderHSection(key) {
     }
     el.appendChild(row);
   });
+
   if (habitEditMode) {
     const addRow = document.createElement('div');
     addRow.className = 'habit-add-row';
@@ -1035,16 +1089,29 @@ function renderHSection(key) {
 function addHabit(key) {
   const inp = document.getElementById('hadd-' + key);
   const val = inp.value.trim(); if (!val) return;
+  const id = 'h' + Date.now();
   if (!appState.habitsDef.items[key]) appState.habitsDef.items[key] = [];
-  appState.habitsDef.items[key].push({id:'h'+Date.now(), t:val, w:'', tag:'m'});
+  appState.habitsDef.items[key].push({id, t: val, w: '', tag: 'm'});
   inp.value = ''; save(); renderHSection(key); updateHMetrics();
 }
-function delHabit(key, i) { appState.habitsDef.items[key].splice(i,1); save(); renderHSection(key); updateHMetrics(); }
-function editHabit(key, i, field, val) { if (appState.habitsDef.items[key]?.[i]) { appState.habitsDef.items[key][i][field]=val; save(); } }
+
+function delHabit(key, i) {
+  appState.habitsDef.items[key].splice(i, 1);
+  save(); renderHSection(key); updateHMetrics();
+}
+
+function editHabit(key, i, field, val) {
+  if (appState.habitsDef.items[key]?.[i]) {
+    appState.habitsDef.items[key][i][field] = val;
+    save();
+  }
+}
+
 function cycleTag(key, i) {
-  const tags=['m','f','t','n','det'];
-  const h=appState.habitsDef.items[key]?.[i]; if(!h) return;
-  h.tag=tags[(tags.indexOf(h.tag)+1)%tags.length]; save(); renderHSection(key);
+  const tags = ['m','f','t','n','det'];
+  const h = appState.habitsDef.items[key]?.[i]; if (!h) return;
+  h.tag = tags[(tags.indexOf(h.tag) + 1) % tags.length];
+  save(); renderHSection(key);
 }
 
 function updateHMetrics() {
@@ -1129,6 +1196,7 @@ function renderAgenda() {
   document.getElementById('agenda-card-lbl').textContent = isToday ? 'Hoje' : `${DAYS_FULL[d.getDay()]}, ${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`;
 
   renderAgendaEvents();
+  fetchGcalEvents(agendaDate);
 }
 
 function renderAgendaEvents() {
@@ -1154,6 +1222,7 @@ function renderAgendaEvents() {
         <div class="event-title${ev.done?' done':''}">${ev.title}</div>
         <span class="event-cal cal-${ev.cal}">${ev.cal === 'work' ? 'Trabalho' : 'Pessoal'}</span>
         ${hasCl ? `<div class="event-has-checklist">☑ Checklist ${clDone}/${ev.checklist.length}</div>` : ''}
+        ${ev.fromGcal ? `<div style="font-size:10px;color:var(--blue);margin-top:2px;font-weight:600">GCal</div>` : ''}
       </div>
       <div class="event-actions">
         <div class="event-chk${ev.done?' on':''}" onclick="toggleEvent('${agendaDate}',${i})">
@@ -1185,7 +1254,7 @@ function openAddEvent() {
   openModal('modal-add-event');
 }
 
-function saveEvent() {
+async function saveEvent() {
   const title = document.getElementById('ev-title').value.trim();
   if (!title) return;
   const time = document.getElementById('ev-time').value;
@@ -1194,7 +1263,8 @@ function saveEvent() {
   const checklist = clRaw ? clRaw.split('\n').filter(l => l.trim()).map(l => ({t: l.trim(), done: false})) : [];
 
   if (!appState.agenda[agendaDate]) appState.agenda[agendaDate] = [];
-  appState.agenda[agendaDate].push({id: Date.now(), title, time, cal, done: false, checklist});
+  const gcalId = await pushEventToGcal(title, time, agendaDate);
+  appState.agenda[agendaDate].push({id: Date.now(), gcalId: gcalId || null, title, time, cal, done: false, checklist});
   save();
   closeModal('modal-add-event');
   renderAgendaEvents();
@@ -1233,8 +1303,224 @@ function renderClItems() {
   });
 }
 
+// ═══════════════════════════════════════════════════════ GOOGLE INTEGRATIONS
+const GCAL_CLIENT_ID = '411181600084-nbdleo4eduaku8rlaoll1kbi5tptonql.apps.googleusercontent.com';
+const GCAL_SCOPE = 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/spreadsheets';
+const SHEETS_ID = '1k_9H6cHP7so-Mcd1YAmYw6mFcMBxVSkAzfm3rb4qTSg'; // Financeiro
+const SHEETS_HABITS_ID = '13u8oTzkhVL_fJqwPfVwVYvMQo8hxFFaFvg8i3C-9lAE';
+const SHEETS_TASKS_ID  = '1AE5WXivJceb7GB1E-qS-Ab-vJxsvQTsgqDzh9mWaVjA';
+
+let gcalToken = null;
+let tokenClient = null;
+
+function initGoogleAuth() {
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GCAL_CLIENT_ID,
+    scope: GCAL_SCOPE,
+    callback: (resp) => {
+      if (resp.error) { console.error('GCal auth error:', resp.error); return; }
+      gcalToken = resp.access_token;
+      onGcalConnected();
+    },
+  });
+}
+
 function connectGcal() {
-  alert('Integração Google Calendar — em breve!\n\nPrecisa de credenciais Google Cloud para ativar OAuth. Todos os eventos já funcionam localmente.');
+  if (!tokenClient) { alert('A carregar Google Auth... tenta de novo em 2 segundos.'); return; }
+  tokenClient.requestAccessToken();
+}
+
+function disconnectGcal() {
+  if (gcalToken) google.accounts.oauth2.revoke(gcalToken);
+  gcalToken = null;
+  renderGcalBanner();
+}
+
+function onGcalConnected() {
+  renderGcalBanner();
+  fetchGcalEvents(agendaDate);
+  initSheetsHeaders();
+}
+
+function renderGcalBanner() {
+  const banner = document.getElementById('gcal-banner');
+  if (!banner) return;
+  if (gcalToken) {
+    banner.innerHTML = `
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2" y="3" width="14" height="13" rx="2" stroke="var(--accent)" stroke-width="1.5"/><path d="M2 7h14" stroke="var(--accent)" stroke-width="1.5"/><path d="M6 2v3M12 2v3" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <div class="gcal-banner-txt" style="color:var(--accent)">Google Agenda conectado ✓</div>
+      <button class="gcal-connect-btn" style="background:transparent;border:1px solid var(--border2);color:var(--muted)" onclick="disconnectGcal()">Desligar</button>`;
+  } else {
+    banner.innerHTML = `
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2" y="3" width="14" height="13" rx="2" stroke="var(--blue)" stroke-width="1.5"/><path d="M2 7h14" stroke="var(--blue)" stroke-width="1.5"/><path d="M6 2v3M12 2v3" stroke="var(--blue)" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <div class="gcal-banner-txt">Conecte Google Agenda para sincronizar eventos</div>
+      <button class="gcal-connect-btn" onclick="connectGcal()">Conectar</button>`;
+  }
+}
+
+async function fetchGcalEvents(date) {
+  if (!gcalToken) return;
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const start = encodeURIComponent(new Date(date + 'T00:00:00').toISOString());
+  const end   = encodeURIComponent(new Date(date + 'T23:59:59').toISOString());
+  const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${start}&timeMax=${end}&singleEvents=true&orderBy=startTime&timeZone=${encodeURIComponent(tz)}`;
+
+  let res;
+  try { res = await fetch(url, { headers: { Authorization: `Bearer ${gcalToken}` } }); }
+  catch(e) { return; }
+
+  if (res.status === 401) { gcalToken = null; renderGcalBanner(); return; }
+  const data = await res.json();
+  if (!data.items) return;
+
+  if (!appState.agenda[date]) appState.agenda[date] = [];
+  let changed = false;
+  data.items.forEach(ev => {
+    if ((appState.agenda[date] || []).some(e => e.gcalId === ev.id)) return;
+    const dt = ev.start?.dateTime;
+    const timeStr = dt ? new Date(dt).toTimeString().slice(0,5) : '';
+    appState.agenda[date].push({
+      id: Date.now() + Math.random(),
+      gcalId: ev.id,
+      title: ev.summary || '(sem título)',
+      time: timeStr,
+      cal: 'work',
+      done: false,
+      checklist: [],
+      fromGcal: true,
+    });
+    changed = true;
+  });
+  if (changed) { save(); renderAgendaEvents(); }
+}
+
+async function pushEventToGcal(title, time, date) {
+  if (!gcalToken) return null;
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  let startObj, endObj;
+  if (time) {
+    const [h, m] = time.split(':').map(Number);
+    const endH = String(h + 1).padStart(2, '0');
+    startObj = { dateTime: `${date}T${time}:00`, timeZone: tz };
+    endObj   = { dateTime: `${date}T${endH}:${String(m).padStart(2,'0')}:00`, timeZone: tz };
+  } else {
+    startObj = { date };
+    endObj   = { date };
+  }
+  try {
+    const res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${gcalToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ summary: title, start: startObj, end: endObj }),
+    });
+    const data = await res.json();
+    return data.id || null;
+  } catch(e) { return null; }
+}
+
+// ═══════════════════════════════════════════════════════ GOOGLE SHEETS
+
+async function sheetsAppendTo(sheetId, range, values) {
+  if (!gcalToken) return;
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+  try {
+    await fetch(url, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${gcalToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ values }),
+    });
+  } catch(e) { console.error('Sheets append error:', e); }
+}
+
+async function sheetsAppend(range, values) {
+  await sheetsAppendTo(SHEETS_ID, range, values);
+}
+
+async function renameFirstSheet(sheetId, newName) {
+  if (!gcalToken) return;
+  try {
+    const metaRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}?fields=sheets.properties`, {
+      headers: { Authorization: `Bearer ${gcalToken}` }
+    });
+    const meta = await metaRes.json();
+    const firstSheet = meta.sheets?.[0]?.properties;
+    if (!firstSheet || firstSheet.title === newName) return;
+    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}:batchUpdate`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${gcalToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requests: [{ updateSheetProperties: { properties: { sheetId: firstSheet.sheetId, title: newName }, fields: 'title' } }] })
+    });
+  } catch(e) { console.error('Rename sheet error:', e); }
+}
+
+async function initSheetsHeaders() {
+  if (!gcalToken) return;
+  try {
+    await renameFirstSheet(SHEETS_HABITS_ID, 'Hábitos');
+    const hRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_HABITS_ID}/values/${encodeURIComponent('Hábitos!A1')}`, { headers: { Authorization: `Bearer ${gcalToken}` } });
+    const hData = await hRes.json();
+    if (!hData.values) await sheetsAppendTo(SHEETS_HABITS_ID, 'Hábitos!A:E', [['Data', '% Dia', 'Feitos', 'Total', 'Data ISO']]);
+  } catch(e) {}
+  try {
+    await renameFirstSheet(SHEETS_TASKS_ID, 'Tasks');
+    const tRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_TASKS_ID}/values/${encodeURIComponent('Tasks!A1')}`, { headers: { Authorization: `Bearer ${gcalToken}` } });
+    const tData = await tRes.json();
+    if (!tData.values) await sheetsAppendTo(SHEETS_TASKS_ID, 'Tasks!A:F', [['Timestamp', 'Título', 'Categoria', 'Ação', 'Data Criação', 'Data Conclusão']]);
+  } catch(e) {}
+}
+
+async function syncTaskToSheets(task, acao, tab) {
+  if (!gcalToken) return;
+  const now = new Date();
+  const ts = `${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const categoria = tab === 'work' ? 'Trabalho' : 'Pessoal';
+  const row = [ts, task.title, categoria, acao, task.createdDate || '', task.doneDate || ''];
+  await sheetsAppendTo(SHEETS_TASKS_ID, 'Tasks!A:F', [row]);
+}
+
+async function appendLancamentoToSheets(lan) {
+  if (!gcalToken) return;
+  const [ano, mes, dia] = lan.data.split('-');
+  const dataFmt = `${parseInt(mes)}/${parseInt(dia)}/${ano}`;
+  const row = [dataFmt, lan.desc, lan.tipo, lan.cat, lan.val, lan.pag, lan.obs || '', parseInt(mes), parseInt(ano)];
+  await sheetsAppend('Lançamentos!A:I', [row]);
+}
+
+let habitsSaveTimer = null;
+function scheduleHabitsToSheets() {
+  clearTimeout(habitsSaveTimer);
+  habitsSaveTimer = setTimeout(() => saveHabitsToSheets(hojeDate), 3000);
+}
+
+async function saveHabitsToSheets(date) {
+  if (!gcalToken) return;
+  const state = appState.habits[date] || {};
+  const allH = Object.values(appState.habitsDef.items).flat();
+  const total = allH.length;
+  const feitos = allH.filter(h => !!state[h.id]).length;
+  const pct = total > 0 ? Math.round(feitos / total * 100) : 0;
+  const [ano, mes, dia] = date.split('-');
+  const dataFmt = `${dia}/${mes}/${ano}`;
+
+  try {
+    const readUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_HABITS_ID}/values/${encodeURIComponent('Hábitos!A:A')}`;
+    const readRes = await fetch(readUrl, { headers: { Authorization: `Bearer ${gcalToken}` } });
+    const readData = await readRes.json();
+    const rows = readData.values || [];
+    const rowIdx = rows.findIndex(r => r[0] === dataFmt);
+
+    const row = [dataFmt, pct + '%', feitos, total, date];
+    if (rowIdx > 0) {
+      const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_HABITS_ID}/values/${encodeURIComponent(`Hábitos!A${rowIdx + 1}:E${rowIdx + 1}`)}?valueInputOption=USER_ENTERED`;
+      await fetch(updateUrl, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${gcalToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ values: [row] }),
+      });
+    } else {
+      await sheetsAppendTo(SHEETS_HABITS_ID, 'Hábitos!A:E', [row]);
+    }
+  } catch(e) { console.error('Sheets habits error:', e); }
 }
 
 // ═══════════════════════════════════════════════════════ TASKS
@@ -1310,19 +1596,24 @@ function toggleTask(tab, id) {
   t.done = !t.done;
   t.doneDate = t.done ? today() : null;
   save(); renderTasks();
+  syncTaskToSheets(t, t.done ? 'concluída' : 'reaberta', tab);
 }
 
 function deleteTask(tab, id) {
-  appState.tasks[tab] = appState.tasks[tab].filter(t => t.id !== id);
+  const t = appState.tasks[tab].find(x => x.id === id);
+  appState.tasks[tab] = appState.tasks[tab].filter(x => x.id !== id);
   save(); renderTasks();
+  if (t) syncTaskToSheets(t, 'deletada', tab);
 }
 
 function addTask() {
   const inp = document.getElementById('task-inp');
   const val = inp.value.trim(); if (!val) return;
-  appState.tasks[currentTaskTab].push({id: 'T' + Date.now(), title: val, createdDate: today(), done: false, doneDate: null});
+  const t = {id: 'T' + Date.now(), title: val, createdDate: today(), done: false, doneDate: null};
+  appState.tasks[currentTaskTab].push(t);
   inp.value = '';
   save(); renderTasks();
+  syncTaskToSheets(t, 'criada', currentTaskTab);
 }
 document.getElementById('task-inp').addEventListener('keydown', e => { if (e.key === 'Enter') addTask(); });
 
@@ -1383,9 +1674,9 @@ function calcFinKpis() {
   const saldo = receita - despesa;
   const taxa = receita > 0 ? Math.round((saldo / receita) * 100) : 0;
 
-  document.getElementById('f-receita').textContent = '€' + receita.toLocaleString('pt-PT');
-  document.getElementById('f-despesa-v').textContent = '€' + despesa.toLocaleString('pt-PT');
-  document.getElementById('f-saldo').textContent = (saldo >= 0 ? '+' : '') + '€' + saldo.toLocaleString('pt-PT');
+  document.getElementById('f-receita').textContent = 'R$' + receita.toLocaleString('pt-BR');
+  document.getElementById('f-despesa-v').textContent = 'R$' + despesa.toLocaleString('pt-BR');
+  document.getElementById('f-saldo').textContent = (saldo >= 0 ? '+' : '') + 'R$' + saldo.toLocaleString('pt-BR');
   document.getElementById('f-saldo').className = 'fin-kpi-v ' + (saldo >= 0 ? 'pos' : 'neg');
   document.getElementById('f-taxa').textContent = 'Taxa de economia: ' + taxa + '%';
   document.getElementById('f-saldo-card').className = 'fin-kpi ' + (saldo >= 0 ? 'saldo-pos' : 'saldo-neg');
@@ -1407,12 +1698,12 @@ function calcFinKpis() {
     const maiorNome = sorted[0][0];
     const maiorVal = sorted[0][1];
     document.getElementById('f-maior-cat').textContent = maiorNome;
-    document.getElementById('f-maior-val').textContent = '€' + maiorVal.toLocaleString('pt-PT');
+    document.getElementById('f-maior-val').textContent = 'R$' + maiorVal.toLocaleString('pt-BR');
     sorted.slice(0,6).forEach(([cat, val]) => {
       const color = Object.entries(CAT_COLORS).find(([k]) => (CAT_MAE[k]||k) === cat)?.[1] || '#64748b';
       const row = document.createElement('div'); row.className = 'cat-row';
       const pct = Math.round((val/max)*100);
-      row.innerHTML = `<div class="cat-dot" style="background:${color}"></div><span class="cat-name">${cat}</span><div class="cat-bar-wrap"><div class="cat-bar-f" style="width:${pct}%;background:${color}"></div></div><span class="cat-val">€${val.toLocaleString('pt-PT')}</span>`;
+      row.innerHTML = `<div class="cat-dot" style="background:${color}"></div><span class="cat-name">${cat}</span><div class="cat-bar-wrap"><div class="cat-bar-f" style="width:${pct}%;background:${color}"></div></div><span class="cat-val">R$${val.toLocaleString('pt-BR')}</span>`;
       catEl.appendChild(row);
     });
   }
@@ -1428,11 +1719,13 @@ function addLan() {
   const data = document.getElementById('lan-data').value || today();
   if (!desc || !val) return;
   const mes = data.slice(0,7);
-  appState.fin.lan.push({id:Date.now(), desc, val, tipo, cat, pag, obs, data, mes});
+  const lan = {id:Date.now(), desc, val, tipo, cat, pag, obs, data, mes};
+  appState.fin.lan.push(lan);
   document.getElementById('lan-desc').value = '';
   document.getElementById('lan-val').value = '';
   document.getElementById('lan-obs').value = '';
   save(); calcFinKpis(); renderLan();
+  appendLancamentoToSheets(lan);
 }
 document.getElementById('lan-desc').addEventListener('keydown', e => { if (e.key === 'Enter') addLan(); });
 
@@ -1459,11 +1752,11 @@ function renderLan() {
         </div>
         ${l.obs ? `<div class="g-obs">${l.obs}</div>` : ''}
       </div>
-      <span class="g-val ${isDesp?'desp':'rec'}">${isDesp?'-':'+'} €${l.val.toLocaleString('pt-PT')}</span>
+      <span class="g-val ${isDesp?'desp':'rec'}">${isDesp?'-':'+'} R$${l.val.toLocaleString('pt-BR')}</span>
       <button class="g-del" onclick="delLan(${l.id})">×</button>`;
     el.appendChild(row);
   });
-  document.getElementById('lan-total').textContent = '€' + totalDesp.toLocaleString('pt-PT');
+  document.getElementById('lan-total').textContent = 'R$' + totalDesp.toLocaleString('pt-BR');
 }
 
 function delLan(id) { appState.fin.lan = appState.fin.lan.filter(l => l.id !== id); save(); calcFinKpis(); renderLan(); }

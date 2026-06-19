@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-title" content="Chefe">
 <title>Chefe — Sistema</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" onload="initGoogleAuth()" async defer></script>
 <style>
 :root {
   --bg: #0c0c0e;
@@ -371,61 +372,67 @@ html, body {
 }
 
 /* FINANCEIRO */
-.fin-inp-row { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border); }
-.fin-inp-row:last-child { border-bottom:none; }
-.fin-lbl { font-size:13px; color:var(--text); font-weight:500; }
-.fin-sub-lbl { font-size:11px; color:var(--muted); margin-top:1px; }
-.fin-inp {
-  font-size:14px; font-weight:700; color:var(--text);
-  background:var(--surface2); border:1px solid var(--border2);
-  border-radius:var(--r-sm); padding:6px 10px;
-  text-align:right; width:130px; font-family:'DM Mono',monospace;
+.fin-kpi-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:12px; }
+.fin-kpi {
+  background:var(--surface2); border-radius:var(--r); padding:14px;
+  border:1px solid var(--border);
 }
-.fin-inp:focus { outline:none; border-color:var(--accent); }
-.distrib-row { display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--border); }
-.distrib-row:last-child { border-bottom:none; }
-.distrib-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
-.distrib-cat { font-size:13px; color:var(--text); flex:1; font-weight:500; }
-.distrib-pct { font-size:11px; color:var(--muted); font-family:'DM Mono',monospace; }
-.distrib-val { font-size:13px; font-weight:700; color:var(--text); min-width:70px; text-align:right; font-family:'DM Mono',monospace; }
-.lan-form { display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
+.fin-kpi.saldo-pos { border-color:rgba(200,245,66,0.3); }
+.fin-kpi.saldo-neg { border-color:rgba(255,107,107,0.3); }
+.fin-kpi-v { font-size:20px; font-weight:800; color:var(--text); letter-spacing:-0.02em; }
+.fin-kpi-v.pos { color:var(--accent); }
+.fin-kpi-v.neg { color:var(--red); }
+.fin-kpi-l { font-size:10px; color:var(--muted); margin-top:3px; font-family:'DM Mono',monospace; letter-spacing:.06em; text-transform:uppercase; }
+.fin-kpi-sub { font-size:11px; color:var(--muted); margin-top:2px; }
+
+.cat-row { display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid var(--border); }
+.cat-row:last-child { border-bottom:none; }
+.cat-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.cat-name { font-size:13px; color:var(--text); flex:1; font-weight:500; }
+.cat-bar-wrap { width:60px; height:4px; background:var(--border2); border-radius:2px; overflow:hidden; }
+.cat-bar-f { height:100%; border-radius:2px; }
+.cat-val { font-size:12px; font-weight:700; color:var(--text); font-family:'DM Mono',monospace; min-width:60px; text-align:right; }
+
+.lan-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px; }
+.lan-form-full { grid-column:span 2; }
 .lan-inp {
-  flex:1; min-width:120px; font-size:13px; padding:9px 12px;
+  width:100%; font-size:13px; padding:9px 12px;
   border-radius:var(--r-sm); border:1px solid var(--border2);
   background:var(--surface2); color:var(--text); font-family:'Syne',sans-serif;
 }
 .lan-inp:focus { outline:none; border-color:var(--accent); }
 .lan-sel {
-  font-size:12px; padding:9px 8px; border-radius:var(--r-sm);
+  width:100%; font-size:12px; padding:9px 10px; border-radius:var(--r-sm);
   border:1px solid var(--border2); background:var(--surface2);
-  color:var(--muted); cursor:pointer;
+  color:var(--text); cursor:pointer;
 }
+.lan-sel:focus { outline:none; border-color:var(--accent); }
 .lan-btn {
-  font-size:12px; font-weight:700; padding:9px 14px;
+  width:100%; font-size:13px; font-weight:700; padding:11px;
   border-radius:var(--r-sm); border:none;
   background:var(--accent); color:#0c0c0e; cursor:pointer;
-  font-family:'Syne',sans-serif; letter-spacing:0.04em;
+  font-family:'Syne',sans-serif; letter-spacing:0.04em; margin-top:4px;
 }
-.gasto-item { display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid var(--border); font-size:13px; }
+.gasto-item { display:flex; align-items:flex-start; gap:8px; padding:10px 0; border-bottom:1px solid var(--border); }
 .gasto-item:last-child { border-bottom:none; }
-.gasto-lbl { font-size:10px; font-weight:600; padding:3px 8px; border-radius:100px; flex-shrink:0; font-family:'DM Mono',monospace; }
-.g-fix { background:var(--accent-dim); color:var(--accent); }
-.g-var { background:var(--amber-dim); color:var(--amber); }
-.g-inv { background:var(--purple-dim); color:var(--purple); }
-.g-name { flex:1; color:var(--text); font-weight:500; }
-.g-val { font-family:'DM Mono',monospace; font-size:13px; font-weight:700; color:var(--text); }
-.g-del { background:none; border:none; color:var(--muted2); cursor:pointer; font-size:18px; padding:0 4px; }
-.meta-block { background:var(--surface2); border-radius:var(--r); padding:14px; margin-bottom:8px; border:1px solid var(--border); }
-.meta-label { font-size:10px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
-.meta-title { font-size:15px; font-weight:700; color:var(--text); margin-bottom:10px; }
-.meta-inp-row { display:flex; gap:8px; margin-bottom:6px; }
-.meta-inp {
-  flex:1; font-size:13px; padding:8px 10px;
-  border-radius:var(--r-sm); border:1px solid var(--border2);
-  background:var(--surface); color:var(--text); font-family:'DM Mono',monospace;
+.gasto-tipo {
+  font-size:9px; font-weight:700; padding:3px 7px; border-radius:100px;
+  flex-shrink:0; font-family:'DM Mono',monospace; margin-top:1px;
 }
-.meta-inp:focus { outline:none; border-color:var(--accent); }
-.meta-info { font-size:11px; color:var(--muted); line-height:1.5; margin-top:6px; }
+.g-desp { background:var(--red-dim); color:var(--red); }
+.g-rec { background:var(--accent-dim); color:var(--accent); }
+.gasto-body { flex:1; }
+.g-name { font-size:13px; color:var(--text); font-weight:500; line-height:1.4; }
+.g-meta { display:flex; align-items:center; gap:6px; margin-top:3px; flex-wrap:wrap; }
+.g-cat { font-size:10px; color:var(--muted); font-family:'DM Mono',monospace; }
+.g-pag { font-size:10px; color:var(--muted2); font-family:'DM Mono',monospace; }
+.g-obs { font-size:10px; color:var(--muted); font-style:italic; margin-top:1px; }
+.g-val { font-family:'DM Mono',monospace; font-size:13px; font-weight:700; flex-shrink:0; }
+.g-val.desp { color:var(--red); }
+.g-val.rec { color:var(--accent); }
+.g-del { background:none; border:none; color:var(--muted2); cursor:pointer; font-size:16px; padding:0 2px; flex-shrink:0; }
+
+.fin-total-row { display:flex; justify-content:space-between; padding:10px 0 0; font-size:13px; color:var(--muted); border-top:1px solid var(--border); margin-top:4px; }
 .save-btn {
   width:100%; padding:12px; border-radius:var(--r);
   border:1px solid var(--border2); background:transparent;
@@ -454,6 +461,44 @@ html, body {
   margin-left:8px; vertical-align:middle;
 }
 ::-webkit-scrollbar { width:0; }
+
+/* HABIT EDIT MODE */
+.habit-edit-toggle {
+  font-size:10px; font-weight:700; padding:5px 12px;
+  border-radius:100px; border:1px solid var(--border2);
+  background:transparent; color:var(--muted);
+  cursor:pointer; font-family:'DM Mono',monospace;
+  letter-spacing:0.04em; transition:all .15s;
+}
+.habit-edit-toggle.on { border-color:var(--accent); color:var(--accent); }
+.habit-del-btn {
+  background:none; border:none; color:var(--red);
+  cursor:pointer; font-size:16px; padding:0 4px;
+  flex-shrink:0; opacity:0.7;
+}
+.habit-add-row {
+  display:flex; gap:6px; margin-top:10px; padding-top:10px;
+  border-top:1px solid var(--border);
+}
+.habit-add-inp {
+  flex:1; font-size:13px; padding:8px 10px;
+  border-radius:var(--r-sm); border:1px solid var(--border2);
+  background:var(--surface2); color:var(--text);
+  font-family:'Syne',sans-serif;
+}
+.habit-add-inp:focus { outline:none; border-color:var(--accent); }
+.habit-add-btn {
+  font-size:18px; font-weight:700; padding:8px 14px;
+  border-radius:var(--r-sm); border:none;
+  background:var(--accent); color:#0c0c0e; cursor:pointer;
+}
+.habit-edit-txt {
+  font-size:13px; color:var(--text); flex:1;
+  background:var(--surface2); border:1px solid var(--border2);
+  border-radius:var(--r-sm); padding:5px 8px;
+  font-family:'Syne',sans-serif; line-height:1.4;
+}
+.habit-edit-txt:focus { outline:none; border-color:var(--accent); }
 
 /* GCAL CONNECT */
 .gcal-banner {
@@ -495,40 +540,29 @@ html, body {
 
 <!-- ═══════════════════════════════════════════════════════ HOJE -->
 <div id="sec-hoje" class="sec on">
-  <div class="sec-title">Hoje <span id="hoje-badge" class="today-badge"></span></div>
+  <div class="day-nav">
+    <button class="day-nav-btn" onclick="hojeNavDay(-1)">‹</button>
+    <div class="day-nav-center">
+      <div class="day-nav-lbl" id="hoje-day-lbl"></div>
+      <div class="day-nav-sub" id="hoje-day-sub"></div>
+    </div>
+    <button class="day-today-btn" id="hoje-today-btn" onclick="hojeGoToday()">Hoje</button>
+    <button class="day-nav-btn" onclick="hojeNavDay(1)">›</button>
+  </div>
 
   <div class="met-grid">
-    <div class="met"><div class="met-v" id="h-pct">0%</div><div class="met-l">Hoje</div><div class="prog"><div class="prog-f" id="h-bar" style="width:0%;background:var(--accent)"></div></div></div>
+    <div class="met"><div class="met-v" id="h-pct">0%</div><div class="met-l">Dia</div><div class="prog"><div class="prog-f" id="h-bar" style="width:0%;background:var(--accent)"></div></div></div>
     <div class="met"><div class="met-v" id="h-streak">0</div><div class="met-l">Streak</div></div>
     <div class="met"><div class="met-v" id="h-cnt">0/0</div><div class="met-l">Feitos</div></div>
   </div>
 
   <div class="week-strip" id="week-strip"></div>
 
-  <div class="card">
-    <div class="card-lbl"><span>Fundação</span><span style="color:var(--accent);font-size:10px;font-weight:600">Manhã</span></div>
-    <div id="h-fundacao"></div>
+  <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+    <button class="habit-edit-toggle" id="habit-edit-btn" onclick="toggleHabitEdit()">Editar hábitos</button>
   </div>
-  <div class="card">
-    <div class="card-lbl"><span>Mente</span></div>
-    <div id="h-mente"></div>
-  </div>
-  <div class="card">
-    <div class="card-lbl"><span>Trabalho</span></div>
-    <div id="h-trabalho"></div>
-  </div>
-  <div class="card">
-    <div class="card-lbl"><span>Desenvolvimento</span><span style="color:var(--blue);font-size:10px;font-weight:600">DET</span></div>
-    <div id="h-dev"></div>
-  </div>
-  <div class="card">
-    <div class="card-lbl"><span>Corpo & Saúde</span></div>
-    <div id="h-corpo"></div>
-  </div>
-  <div class="card">
-    <div class="card-lbl"><span>Encerramento</span><span style="color:var(--purple);font-size:10px;font-weight:600">Noite</span></div>
-    <div id="h-enc"></div>
-  </div>
+
+  <div id="habit-sections"></div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ AGENDA -->
@@ -585,88 +619,101 @@ html, body {
 <!-- ═══════════════════════════════════════════════════════ FINANCEIRO -->
 <div id="sec-financeiro" class="sec">
   <div class="sec-title">Financeiro</div>
-  <div class="sec-sub">Primeiro caixa. Depois patrimônio. Depois liberdade.</div>
+  <div class="sec-sub" id="f-mes-lbl"></div>
 
-  <div class="card">
-    <div class="card-lbl">Renda mensal</div>
-    <div class="fin-inp-row">
-      <div><div class="fin-lbl">Pró-labore (R$)</div><div class="fin-sub-lbl">Salário fixo da empresa</div></div>
-      <input class="fin-inp" id="f-prolabore" type="number" placeholder="0,00" oninput="calcFin()"/>
-    </div>
-    <div class="fin-inp-row">
-      <div><div class="fin-lbl">Distribuição extra (R$)</div><div class="fin-sub-lbl">Lucros variáveis</div></div>
-      <input class="fin-inp" id="f-extra" type="number" placeholder="0,00" oninput="calcFin()"/>
-    </div>
-    <div class="fin-inp-row" style="border:none">
-      <div><div class="fin-lbl">Despesa mensal (R$)</div><div class="fin-sub-lbl">Estimativa atual</div></div>
-      <input class="fin-inp" id="f-despesa" type="number" value="2000" oninput="calcFin()"/>
-    </div>
-    <button class="save-btn primary" onclick="saveFin()">Salvar</button>
+  <!-- KPIs -->
+  <div class="fin-kpi-grid">
+    <div class="fin-kpi"><div class="fin-kpi-v pos" id="f-receita">R$0</div><div class="fin-kpi-l">Receita</div></div>
+    <div class="fin-kpi"><div class="fin-kpi-v" id="f-despesa-v">R$0</div><div class="fin-kpi-l">Despesas</div></div>
+    <div class="fin-kpi" id="f-saldo-card"><div class="fin-kpi-v" id="f-saldo">R$0</div><div class="fin-kpi-l">Saldo</div><div class="fin-kpi-sub" id="f-taxa"></div></div>
+    <div class="fin-kpi"><div class="fin-kpi-v" id="f-maior-cat">—</div><div class="fin-kpi-l">Maior gasto</div><div class="fin-kpi-sub" id="f-maior-val"></div></div>
   </div>
 
-  <div class="met-grid" style="grid-template-columns:repeat(2,1fr)">
-    <div class="met"><div class="met-v" id="f-renda">R$0</div><div class="met-l">Renda total</div></div>
-    <div class="met"><div class="met-v" id="f-sobra">R$0</div><div class="met-l">Sobra/mês</div></div>
-    <div class="met"><div class="met-v" id="f-res">R$0</div><div class="met-l">Meta reserva</div><div class="prog"><div class="prog-f" id="f-res-bar" style="width:0%;background:var(--accent)"></div></div></div>
-    <div class="met"><div class="met-v" id="f-aporte">R$0</div><div class="met-l">Aporte/mês</div></div>
+  <!-- Top categorias -->
+  <div class="card" id="f-cats-card" style="display:none">
+    <div class="card-lbl">Gastos por categoria</div>
+    <div id="f-cats"></div>
   </div>
 
+  <!-- Lançar -->
   <div class="card">
-    <div class="card-lbl">Distribuição da sobra</div>
-    <div id="f-distrib"></div>
-  </div>
-
-  <div class="card">
-    <div class="card-lbl">Lançamentos — <span id="f-mes-lbl" style="color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400"></span></div>
-    <div class="lan-form">
-      <input class="lan-inp" id="lan-desc" placeholder="Descrição..." />
-      <input class="lan-inp" id="lan-val" type="number" placeholder="R$" style="max-width:90px"/>
-      <select class="lan-sel" id="lan-cat">
-        <option value="fix">Fixo</option>
-        <option value="var">Variável</option>
-        <option value="inv">Invest.</option>
+    <div class="card-lbl">Novo lançamento</div>
+    <div class="lan-form-grid">
+      <input class="lan-inp lan-form-full" id="lan-desc" placeholder="Descrição (ex: Academia, Mercado...)" />
+      <input class="lan-inp" id="lan-val" type="number" placeholder="Valor R$" step="0.01"/>
+      <input class="lan-inp" id="lan-data" type="date"/>
+      <select class="lan-sel" id="lan-tipo">
+        <option value="Despesa">Despesa</option>
+        <option value="Receita">Receita</option>
       </select>
-      <button class="lan-btn" onclick="addLan()">+</button>
+      <select class="lan-sel" id="lan-cat">
+        <optgroup label="— Alimentação">
+          <option value="Mercado">Mercado</option>
+          <option value="Comer Fora">Comer Fora</option>
+          <option value="iFood">iFood</option>
+        </optgroup>
+        <optgroup label="— Saúde">
+          <option value="Academia">Academia</option>
+          <option value="Jiu Jitsu">Jiu Jitsu</option>
+          <option value="Médico/Consulta">Médico/Consulta</option>
+          <option value="Farmácia">Farmácia</option>
+        </optgroup>
+        <optgroup label="— Transporte">
+          <option value="Gasolina">Gasolina</option>
+          <option value="Uber/99">Uber/99</option>
+          <option value="Metro/Bus">Metro/Bus</option>
+        </optgroup>
+        <optgroup label="— Moradia">
+          <option value="Aluguel">Aluguel</option>
+          <option value="Contas">Contas (Luz/Água)</option>
+          <option value="Internet">Internet</option>
+        </optgroup>
+        <optgroup label="— Lazer">
+          <option value="Bar/Balada">Bar/Balada</option>
+          <option value="Rolê/Saída">Rolê/Saída</option>
+          <option value="Cinema/Evento">Cinema/Evento</option>
+        </optgroup>
+        <optgroup label="— Outros">
+          <option value="Assinaturas">Assinaturas</option>
+          <option value="Educação">Educação</option>
+          <option value="Cuidados Pessoais">Cuidados Pessoais</option>
+          <option value="Parcelado">Parcelado</option>
+          <option value="Dívidas">Dívidas</option>
+          <option value="Extra/Emergência">Extra/Emergência</option>
+          <option value="Outros">Outros</option>
+        </optgroup>
+        <optgroup label="— Receita">
+          <option value="Salário">Salário</option>
+          <option value="Empresa">Empresa</option>
+          <option value="Freelance">Freelance</option>
+          <option value="Rendimento">Rendimento</option>
+        </optgroup>
+      </select>
+      <select class="lan-sel" id="lan-pag">
+        <option value="Cartão de Crédito">Cartão Crédito</option>
+        <option value="PIX">PIX</option>
+        <option value="Dinheiro">Dinheiro</option>
+        <option value="Cartão de Débito">Cartão Débito</option>
+        <option value="Transferência">Transferência</option>
+        <option value="N26">N26</option>
+        <option value="Revolut">Revolut</option>
+        <option value="Wise">Wise</option>
+        <option value="Banco Inter">Banco Inter</option>
+      </select>
+      <input class="lan-inp lan-form-full" id="lan-obs" placeholder="Observação (opcional)" />
     </div>
+    <button class="lan-btn" onclick="addLan()">Lançar</button>
+  </div>
+
+  <!-- Lista lançamentos -->
+  <div class="card">
+    <div class="card-lbl">Lançamentos do mês</div>
     <div id="lan-list"></div>
-    <div style="display:flex;justify-content:space-between;padding-top:10px;font-size:13px;color:var(--muted);border-top:1px solid var(--border);margin-top:4px">
-      <span>Total gasto</span>
-      <span id="lan-total" style="font-weight:700;color:var(--text);font-family:'DM Mono',monospace">R$0</span>
+    <div class="fin-total-row">
+      <span>Total despesas</span>
+      <span id="lan-total" style="font-weight:700;color:var(--red);font-family:'DM Mono',monospace">R$0</span>
     </div>
   </div>
-
-  <div class="meta-block">
-    <div class="meta-label">Prioridade 1</div>
-    <div class="meta-title">Reserva de emergência</div>
-    <div class="meta-inp-row">
-      <input class="meta-inp" id="m-res-alvo" type="number" placeholder="Meta R$" oninput="calcMetas()"/>
-      <input class="meta-inp" id="m-res-atual" type="number" placeholder="Atual R$" oninput="calcMetas()"/>
-    </div>
-    <div class="prog" style="height:5px"><div class="prog-f" id="m-res-bar" style="width:0%;background:var(--accent)"></div></div>
-    <div class="meta-info" id="m-res-info">Regra: 6x sua despesa mensal</div>
-  </div>
-
-  <div class="meta-block">
-    <div class="meta-label">Prioridade 2</div>
-    <div class="meta-title">Aporte mensal fixo</div>
-    <div class="meta-inp-row">
-      <input class="meta-inp" id="m-aporte" type="number" placeholder="R$/mês" oninput="calcMetas()"/>
-    </div>
-    <div class="meta-info" id="m-aporte-info">Sai no dia 1 — antes de qualquer despesa.</div>
-  </div>
-
-  <div class="meta-block">
-    <div class="meta-label">Prioridade 3</div>
-    <input class="meta-inp" id="m-esp-nome" placeholder="Nome da meta (ex: Passagem EUA)" style="margin-bottom:8px;width:100%"/>
-    <div class="meta-inp-row">
-      <input class="meta-inp" id="m-esp-alvo" type="number" placeholder="Alvo R$" oninput="calcMetas()"/>
-      <input class="meta-inp" id="m-esp-atual" type="number" placeholder="Atual R$" oninput="calcMetas()"/>
-    </div>
-    <div class="prog" style="height:5px;margin-top:8px"><div class="prog-f" id="m-esp-bar" style="width:0%;background:var(--purple)"></div></div>
-    <div class="meta-info" id="m-esp-info"></div>
-  </div>
-
-  <button class="save-btn primary" onclick="saveMetas()">Salvar metas</button>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ MANTRA -->
@@ -825,53 +872,59 @@ const DAYS_FULL = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sába
 const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const MONTHS_SHORT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
-const habitsData = {
-  fundacao: [
-    {id:'acorda', t:'Acordei às 08:30', w:'Horário fixo. Não negocia.', tag:'m'},
-    {id:'cama', t:'Arrumei a cama', w:'Primeira vitória do dia.', tag:'m'},
-    {id:'oracao', t:'Oração (2min+)', w:'Âncora do dia. Antes de qualquer coisa.', tag:'m'},
-    {id:'agua_rosto', t:'Água gelada no rosto', w:'Sai do modo sonolento imediatamente.', tag:'m'},
+const DEFAULT_HABITS = {
+  sections: [
+    {key:'fundacao', label:'Fundação', badge:'Manhã', badgeColor:'var(--accent)'},
+    {key:'mente',    label:'Mente',    badge:'',      badgeColor:''},
+    {key:'trabalho', label:'Trabalho', badge:'',      badgeColor:''},
+    {key:'dev',      label:'Desenvolvimento', badge:'DET', badgeColor:'var(--blue)'},
+    {key:'corpo',    label:'Corpo & Saúde', badge:'', badgeColor:''},
+    {key:'enc',      label:'Encerramento', badge:'Noite', badgeColor:'var(--purple)'},
   ],
-  mente: [
-    {id:'cafe', t:'Fez o café', w:'Ritual que sinaliza início da manhã produtiva.', tag:'m'},
-    {id:'vitaminas', t:'Vitaminas (B12 + Creatina + D)', w:'Substrato cognitivo do dia.', tag:'m'},
-    {id:'leitura', t:'Leitura com caderno (10 páginas)', w:'Caderno aberto. 1 lição anotada.', tag:'m'},
-  ],
-  trabalho: [
-    {id:'duolingo', t:'Duolingo 10-15 min', w:'Aquecimento linguístico antes do modo profundo.', tag:'m'},
-    {id:'ritual', t:'Notebook aberto — modo profundo', w:'Este gesto é o interruptor. Liga o foco.', tag:'m'},
-    {id:'profundo', t:'Trabalho profundo LF Services (90min+)', w:'Sem interrupção. Uma tarefa principal.', tag:'m'},
-    {id:'decisao', t:'1 decisão importante tomada', w:'A voz que adia é o governador mental. Decida.', tag:'m'},
-  ],
-  dev: [
-    {id:'shadowing', t:'Shadowing inglês 10min em voz alta', w:'Repete frases. Pronúncia + fluência.', tag:'det'},
-    {id:'det', t:'Prática DET 30min (DETPractice / Teacher Luke)', w:'S1-2: Read+Listen. S3-4: Write+Speak. S5-6: mocks.', tag:'det'},
-  ],
-  corpo: [
-    {id:'alimentacao', t:'Alimentação limpa', w:'Combustível, não prazer.', tag:'f'},
-    {id:'agua', t:'2L de água no dia', w:'Inegociável.', tag:'f'},
-    {id:'scroll', t:'Zero scrolling sem intenção', w:'Não é lazer, é sequestro.', tag:'f'},
-    {id:'porn', t:'Zero pornografia', w:'Sem negociação.', tag:'f'},
-  ],
-  enc: [
-    {id:'biblia', t:'Leitura da Bíblia', w:'Encerra o dia com a mesma âncora que o abriu.', tag:'n'},
-    {id:'oracao_noite', t:'Oração de agradecimento', w:'Gratidão pelo dia. Entrega do dia seguinte.', tag:'n'},
-    {id:'revisao', t:'Revisão: acerto / falha / ajuste amanhã', w:'Sem reflexão o sistema não aprende. 2min.', tag:'n'},
-    {id:'telas', t:'Telas off 30min antes de dormir', w:'Sono de qualidade começa aqui.', tag:'n'},
-    {id:'dorme', t:'Dormindo às 00:30', w:'Horário fixo.', tag:'n'},
-  ]
+  items: {
+    fundacao: [
+      {id:'acorda',     t:'Acordei às 08:30',                        w:'Horário fixo. Não negocia.',                    tag:'m'},
+      {id:'cama',       t:'Arrumei a cama',                          w:'Primeira vitória do dia.',                      tag:'m'},
+      {id:'oracao',     t:'Oração (2min+)',                          w:'Âncora do dia. Antes de qualquer coisa.',       tag:'m'},
+      {id:'agua_rosto', t:'Água gelada no rosto',                    w:'Sai do modo sonolento imediatamente.',          tag:'m'},
+    ],
+    mente: [
+      {id:'cafe',       t:'Fez o café',                              w:'Ritual que sinaliza início da manhã produtiva.',tag:'m'},
+      {id:'vitaminas',  t:'Vitaminas (B12 + Creatina + D)',          w:'Substrato cognitivo do dia.',                   tag:'m'},
+      {id:'leitura',    t:'Leitura com caderno (10 páginas)',        w:'Caderno aberto. 1 lição anotada.',              tag:'m'},
+    ],
+    trabalho: [
+      {id:'duolingo',   t:'Duolingo 10-15 min',                     w:'Aquecimento linguístico antes do modo profundo.',tag:'m'},
+      {id:'ritual',     t:'Notebook aberto — modo profundo',        w:'Este gesto é o interruptor. Liga o foco.',      tag:'m'},
+      {id:'profundo',   t:'Trabalho profundo LF Services (90min+)', w:'Sem interrupção. Uma tarefa principal.',        tag:'m'},
+      {id:'decisao',    t:'1 decisão importante tomada',            w:'A voz que adia é o governador mental. Decida.', tag:'m'},
+    ],
+    dev: [
+      {id:'shadowing',  t:'Shadowing inglês 10min em voz alta',     w:'Repete frases. Pronúncia + fluência.',          tag:'det'},
+      {id:'det',        t:'Prática DET 30min',                      w:'S1-2: Read+Listen. S3-4: Write+Speak.',         tag:'det'},
+    ],
+    corpo: [
+      {id:'alimentacao',t:'Alimentação limpa',                      w:'Combustível, não prazer.',                      tag:'f'},
+      {id:'agua',       t:'2L de água no dia',                      w:'Inegociável.',                                  tag:'f'},
+      {id:'scroll',     t:'Zero scrolling sem intenção',            w:'Não é lazer, é sequestro.',                     tag:'f'},
+      {id:'porn',       t:'Zero pornografia',                       w:'Sem negociação.',                               tag:'f'},
+    ],
+    enc: [
+      {id:'biblia',       t:'Leitura da Bíblia',                    w:'Encerra o dia com a mesma âncora que o abriu.', tag:'n'},
+      {id:'oracao_noite', t:'Oração de agradecimento',              w:'Gratidão pelo dia. Entrega do dia seguinte.',   tag:'n'},
+      {id:'revisao',      t:'Revisão: acerto / falha / ajuste',     w:'Sem reflexão o sistema não aprende. 2min.',     tag:'n'},
+      {id:'telas',        t:'Telas off 30min antes de dormir',      w:'Sono de qualidade começa aqui.',                tag:'n'},
+      {id:'dorme',        t:'Dormindo às 00:30',                    w:'Horário fixo.',                                 tag:'n'},
+    ],
+  }
 };
 
 let appState = {
   habits: {}, hist: [],
-  agenda: {},       // { 'YYYY-MM-DD': [{id, title, time, cal, done, checklist:[{t,done}]}] }
-  tasks: {          // { work: [{id,title,createdDate,done,doneDate}], pessoal: [...] }
-    work: [], pessoal: []
-  },
-  fin: {
-    prolabore:0, extra:0, despesa:2000, lan:[],
-    metas:{resAlvo:0,resAtual:0,aporte:0,espNome:'',espAlvo:0,espAtual:0}
-  },
+  habitsDef: null,
+  agenda: {},
+  tasks: { work: [], pessoal: [] },
+  fin: { lan: [] },
 };
 
 try {
@@ -879,13 +932,15 @@ try {
   if (s) {
     const p = JSON.parse(s);
     Object.assign(appState, p);
-    // ensure tasks structure
     if (!appState.tasks) appState.tasks = {work:[],pessoal:[]};
     if (!appState.tasks.work) appState.tasks.work = [];
     if (!appState.tasks.pessoal) appState.tasks.pessoal = [];
     if (!appState.agenda) appState.agenda = {};
+    if (!appState.fin) appState.fin = {lan:[]};
   }
 } catch(e) {}
+
+if (!appState.habitsDef) appState.habitsDef = JSON.parse(JSON.stringify(DEFAULT_HABITS));
 
 // migrate old data
 try {
@@ -926,57 +981,153 @@ function renderHeader() {
   const days = ['DOM','SEG','TER','QUA','QUI','SEX','SAB'];
   const months = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
   document.getElementById('hdr-date').innerHTML = `${days[d.getDay()]}<br>${d.getDate()} ${months[d.getMonth()]}`;
-  document.getElementById('hoje-badge').textContent = days[d.getDay()];
+  const badge = document.getElementById('hoje-badge');
+  if (badge) badge.textContent = days[d.getDay()];
 }
 
 // ═══════════════════════════════════════════════════════ HOJE (HÁBITOS)
+let hojeDate = today();
+let habitEditMode = false;
+
+function hojeNavDay(delta) {
+  const d = new Date(hojeDate); d.setDate(d.getDate() + delta);
+  hojeDate = d.toISOString().slice(0,10);
+  renderHoje();
+}
+function hojeGoToday() { hojeDate = today(); renderHoje(); }
+
+function toggleHabitEdit() {
+  habitEditMode = !habitEditMode;
+  const btn = document.getElementById('habit-edit-btn');
+  btn.classList.toggle('on', habitEditMode);
+  btn.textContent = habitEditMode ? 'Concluir edição' : 'Editar hábitos';
+  renderHabitSections();
+}
+
 function renderHoje() {
+  renderHojeNav();
   renderWeekStrip();
-  const sections = [
-    {key:'fundacao', el:'h-fundacao'},
-    {key:'mente',    el:'h-mente'},
-    {key:'trabalho', el:'h-trabalho'},
-    {key:'dev',      el:'h-dev'},
-    {key:'corpo',    el:'h-corpo'},
-    {key:'enc',      el:'h-enc'},
-  ];
-  sections.forEach(s => renderHSection(s.key, s.el));
+  renderHabitSections();
   updateHMetrics();
 }
 
-function renderHSection(key, elId) {
-  const el = document.getElementById(elId); if (!el) return;
-  el.innerHTML = '';
-  const td = today();
-  if (!appState.habits[td]) appState.habits[td] = {};
-  habitsData[key].forEach(h => {
-    const done = !!appState.habits[td][h.id];
-    const row = document.createElement('div');
-    row.className = 'hrow';
-    row.onclick = () => {
-      appState.habits[td][h.id] = !appState.habits[td][h.id];
-      save(); renderHSection(key, elId); updateHMetrics(); renderWeekStrip();
-    };
-    const tagMap = {m:'tag-m M', t:'tag-t T', n:'tag-n N', f:'tag-f F', det:'tag-det DET'};
-    const [tc, tl] = (tagMap[h.tag] || 'tag-f F').split(' ');
-    row.innerHTML = `<div class="chk${done?' on':''}"><svg viewBox="0 0 11 8" fill="none"><path d="M1 4l3 3 6-6" stroke="#0c0c0e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div style="flex:1"><div class="htxt${done?' on':''}">${h.t}</div><div class="hwhy">${h.w}</div></div><span class="htag ${tc}">${tl}</span>`;
-    el.appendChild(row);
+function renderHojeNav() {
+  const d = new Date(hojeDate + 'T12:00:00');
+  const isToday = hojeDate === today();
+  let lbl = '';
+  if (isToday) lbl = 'Hoje';
+  else {
+    const diff = Math.round((new Date(hojeDate + 'T12:00:00') - new Date(today() + 'T12:00:00')) / 86400000);
+    if (diff === 1) lbl = 'Amanhã';
+    else if (diff === -1) lbl = 'Ontem';
+    else lbl = DAYS_FULL[d.getDay()];
+  }
+  document.getElementById('hoje-day-lbl').textContent = lbl;
+  document.getElementById('hoje-day-sub').textContent = `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]} ${d.getFullYear()}`;
+  document.getElementById('hoje-today-btn').classList.toggle('is-today', isToday);
+}
+
+function renderHabitSections() {
+  const container = document.getElementById('habit-sections');
+  container.innerHTML = '';
+  const def = appState.habitsDef;
+  def.sections.forEach(sec => {
+    const items = def.items[sec.key] || [];
+    const card = document.createElement('div');
+    card.className = 'card';
+    const badgeHtml = sec.badge ? `<span style="color:${sec.badgeColor};font-size:10px;font-weight:600">${sec.badge}</span>` : '';
+    card.innerHTML = `<div class="card-lbl"><span>${sec.label}</span>${badgeHtml}</div><div id="hsec-${sec.key}"></div>`;
+    container.appendChild(card);
+    renderHSection(sec.key);
   });
 }
 
+function renderHSection(key) {
+  const el = document.getElementById('hsec-' + key); if (!el) return;
+  el.innerHTML = '';
+  const def = appState.habitsDef;
+  const items = def.items[key] || [];
+  if (!appState.habits[hojeDate]) appState.habits[hojeDate] = {};
+
+  items.forEach((h, i) => {
+    const done = !!appState.habits[hojeDate][h.id];
+    const row = document.createElement('div');
+    row.className = 'hrow';
+    if (!habitEditMode) {
+      row.onclick = () => {
+        appState.habits[hojeDate][h.id] = !appState.habits[hojeDate][h.id];
+        save(); renderHSection(key); updateHMetrics(); renderWeekStrip();
+        scheduleHabitsToSheets();
+      };
+    }
+    const tagMap = {m:'tag-m M', t:'tag-t T', n:'tag-n N', f:'tag-f F', det:'tag-det DET'};
+    const [tc, tl] = (tagMap[h.tag] || 'tag-f F').split(' ');
+
+    if (habitEditMode) {
+      row.innerHTML = `
+        <button class="habit-del-btn" onclick="delHabit('${key}',${i})">✕</button>
+        <div style="flex:1">
+          <input class="habit-edit-txt" value="${h.t}" onblur="editHabit('${key}',${i},'t',this.value)" style="width:100%;margin-bottom:4px"/>
+          <input class="habit-edit-txt" value="${h.w}" onblur="editHabit('${key}',${i},'w',this.value)" style="width:100%;font-size:11px;color:var(--muted)"/>
+        </div>
+        <span class="htag ${tc}" style="cursor:pointer" onclick="cycleTag('${key}',${i})">${tl}</span>`;
+    } else {
+      row.innerHTML = `<div class="chk${done?' on':''}"><svg viewBox="0 0 11 8" fill="none"><path d="M1 4l3 3 6-6" stroke="#0c0c0e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div style="flex:1"><div class="htxt${done?' on':''}">${h.t}</div><div class="hwhy">${h.w}</div></div><span class="htag ${tc}">${tl}</span>`;
+    }
+    el.appendChild(row);
+  });
+
+  if (habitEditMode) {
+    const addRow = document.createElement('div');
+    addRow.className = 'habit-add-row';
+    addRow.innerHTML = `<input class="habit-add-inp" id="hadd-${key}" placeholder="Novo hábito..." /><button class="habit-add-btn" onclick="addHabit('${key}')">+</button>`;
+    el.appendChild(addRow);
+    document.getElementById('hadd-' + key)?.addEventListener('keydown', e => { if (e.key === 'Enter') addHabit(key); });
+  }
+}
+
+function addHabit(key) {
+  const inp = document.getElementById('hadd-' + key);
+  const val = inp.value.trim(); if (!val) return;
+  const id = 'h' + Date.now();
+  if (!appState.habitsDef.items[key]) appState.habitsDef.items[key] = [];
+  appState.habitsDef.items[key].push({id, t: val, w: '', tag: 'm'});
+  inp.value = ''; save(); renderHSection(key); updateHMetrics();
+}
+
+function delHabit(key, i) {
+  appState.habitsDef.items[key].splice(i, 1);
+  save(); renderHSection(key); updateHMetrics();
+}
+
+function editHabit(key, i, field, val) {
+  if (appState.habitsDef.items[key]?.[i]) {
+    appState.habitsDef.items[key][i][field] = val;
+    save();
+  }
+}
+
+function cycleTag(key, i) {
+  const tags = ['m','f','t','n','det'];
+  const h = appState.habitsDef.items[key]?.[i]; if (!h) return;
+  h.tag = tags[(tags.indexOf(h.tag) + 1) % tags.length];
+  save(); renderHSection(key);
+}
+
 function updateHMetrics() {
-  const td = today();
-  const state = appState.habits[td] || {};
-  const allH = Object.values(habitsData).flat();
+  const state = appState.habits[hojeDate] || {};
+  const allH = Object.values(appState.habitsDef.items).flat();
   const total = allH.length;
   const done = Object.values(state).filter(Boolean).length;
-  const pct = Math.round(done / total * 100);
+  const pct = total > 0 ? Math.round(done / total * 100) : 0;
   document.getElementById('h-pct').textContent = pct + '%';
   document.getElementById('h-bar').style.width = pct + '%';
   document.getElementById('h-cnt').textContent = done + '/' + total;
-  const ex = appState.hist.findIndex(d => d.date === today());
-  if (ex >= 0) appState.hist[ex].pct = pct;
-  else appState.hist.push({date: today(), pct});
+  if (hojeDate <= today()) {
+    const ex = appState.hist.findIndex(d => d.date === hojeDate);
+    if (ex >= 0) appState.hist[ex].pct = pct;
+    else appState.hist.push({date: hojeDate, pct});
+  }
   let streak = 0, prev = today();
   const sorted = [...appState.hist].sort((a,b) => b.date.localeCompare(a.date));
   for (const d of sorted) {
@@ -990,16 +1141,20 @@ function updateHMetrics() {
 function renderWeekStrip() {
   const g = document.getElementById('week-strip'); if (!g) return;
   g.innerHTML = '';
-  const now = new Date();
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(now); d.setDate(now.getDate() - i);
+  const base = new Date(hojeDate + 'T12:00:00');
+  for (let i = -3; i <= 3; i++) {
+    const d = new Date(base); d.setDate(base.getDate() + i);
     const key = d.toISOString().slice(0,10);
     const h = appState.hist.find(x => x.date === key);
+    const isSelected = key === hojeDate;
     const isT = key === today();
     const cls = h ? (h.pct >= 75 ? 'good' : h.pct >= 40 ? 'mid' : '') : '';
     const b = document.createElement('div');
-    b.className = 'wday' + (isT ? ' today' : '') + (cls ? ' ' + cls : '');
-    b.innerHTML = `<div class="wd-l">${DAYS[d.getDay()]}</div><div class="wd-n">${d.getDate()}</div><div class="wd-p">${h && h.pct > 0 ? h.pct + '%' : ''}</div>`;
+    b.className = 'wday' + (isSelected ? ' today' : '') + (cls && !isSelected ? ' ' + cls : '');
+    if (isSelected) b.style.borderColor = 'var(--accent)';
+    b.style.cursor = 'pointer';
+    b.onclick = () => { hojeDate = key; renderHoje(); };
+    b.innerHTML = `<div class="wd-l">${isT && !isSelected ? '●' : DAYS[d.getDay()]}</div><div class="wd-n">${d.getDate()}</div><div class="wd-p">${h && h.pct > 0 ? h.pct + '%' : ''}</div>`;
     g.appendChild(b);
   }
 }
@@ -1041,6 +1196,7 @@ function renderAgenda() {
   document.getElementById('agenda-card-lbl').textContent = isToday ? 'Hoje' : `${DAYS_FULL[d.getDay()]}, ${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`;
 
   renderAgendaEvents();
+  fetchGcalEvents(agendaDate);
 }
 
 function renderAgendaEvents() {
@@ -1066,6 +1222,7 @@ function renderAgendaEvents() {
         <div class="event-title${ev.done?' done':''}">${ev.title}</div>
         <span class="event-cal cal-${ev.cal}">${ev.cal === 'work' ? 'Trabalho' : 'Pessoal'}</span>
         ${hasCl ? `<div class="event-has-checklist">☑ Checklist ${clDone}/${ev.checklist.length}</div>` : ''}
+        ${ev.fromGcal ? `<div style="font-size:10px;color:var(--blue);margin-top:2px;font-weight:600">GCal</div>` : ''}
       </div>
       <div class="event-actions">
         <div class="event-chk${ev.done?' on':''}" onclick="toggleEvent('${agendaDate}',${i})">
@@ -1097,7 +1254,7 @@ function openAddEvent() {
   openModal('modal-add-event');
 }
 
-function saveEvent() {
+async function saveEvent() {
   const title = document.getElementById('ev-title').value.trim();
   if (!title) return;
   const time = document.getElementById('ev-time').value;
@@ -1106,7 +1263,8 @@ function saveEvent() {
   const checklist = clRaw ? clRaw.split('\n').filter(l => l.trim()).map(l => ({t: l.trim(), done: false})) : [];
 
   if (!appState.agenda[agendaDate]) appState.agenda[agendaDate] = [];
-  appState.agenda[agendaDate].push({id: Date.now(), title, time, cal, done: false, checklist});
+  const gcalId = await pushEventToGcal(title, time, agendaDate);
+  appState.agenda[agendaDate].push({id: Date.now(), gcalId: gcalId || null, title, time, cal, done: false, checklist});
   save();
   closeModal('modal-add-event');
   renderAgendaEvents();
@@ -1145,8 +1303,224 @@ function renderClItems() {
   });
 }
 
+// ═══════════════════════════════════════════════════════ GOOGLE INTEGRATIONS
+const GCAL_CLIENT_ID = '411181600084-nbdleo4eduaku8rlaoll1kbi5tptonql.apps.googleusercontent.com';
+const GCAL_SCOPE = 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/spreadsheets';
+const SHEETS_ID = '1k_9H6cHP7so-Mcd1YAmYw6mFcMBxVSkAzfm3rb4qTSg'; // Financeiro
+const SHEETS_HABITS_ID = '13u8oTzkhVL_fJqwPfVwVYvMQo8hxFFaFvg8i3C-9lAE';
+const SHEETS_TASKS_ID  = '1AE5WXivJceb7GB1E-qS-Ab-vJxsvQTsgqDzh9mWaVjA';
+
+let gcalToken = null;
+let tokenClient = null;
+
+function initGoogleAuth() {
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GCAL_CLIENT_ID,
+    scope: GCAL_SCOPE,
+    callback: (resp) => {
+      if (resp.error) { console.error('GCal auth error:', resp.error); return; }
+      gcalToken = resp.access_token;
+      onGcalConnected();
+    },
+  });
+}
+
 function connectGcal() {
-  alert('Integração Google Calendar — em breve!\n\nPrecisa de credenciais Google Cloud para ativar OAuth. Todos os eventos já funcionam localmente.');
+  if (!tokenClient) { alert('A carregar Google Auth... tenta de novo em 2 segundos.'); return; }
+  tokenClient.requestAccessToken();
+}
+
+function disconnectGcal() {
+  if (gcalToken) google.accounts.oauth2.revoke(gcalToken);
+  gcalToken = null;
+  renderGcalBanner();
+}
+
+function onGcalConnected() {
+  renderGcalBanner();
+  fetchGcalEvents(agendaDate);
+  initSheetsHeaders();
+}
+
+function renderGcalBanner() {
+  const banner = document.getElementById('gcal-banner');
+  if (!banner) return;
+  if (gcalToken) {
+    banner.innerHTML = `
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2" y="3" width="14" height="13" rx="2" stroke="var(--accent)" stroke-width="1.5"/><path d="M2 7h14" stroke="var(--accent)" stroke-width="1.5"/><path d="M6 2v3M12 2v3" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <div class="gcal-banner-txt" style="color:var(--accent)">Google Agenda conectado ✓</div>
+      <button class="gcal-connect-btn" style="background:transparent;border:1px solid var(--border2);color:var(--muted)" onclick="disconnectGcal()">Desligar</button>`;
+  } else {
+    banner.innerHTML = `
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2" y="3" width="14" height="13" rx="2" stroke="var(--blue)" stroke-width="1.5"/><path d="M2 7h14" stroke="var(--blue)" stroke-width="1.5"/><path d="M6 2v3M12 2v3" stroke="var(--blue)" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <div class="gcal-banner-txt">Conecte Google Agenda para sincronizar eventos</div>
+      <button class="gcal-connect-btn" onclick="connectGcal()">Conectar</button>`;
+  }
+}
+
+async function fetchGcalEvents(date) {
+  if (!gcalToken) return;
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const start = encodeURIComponent(new Date(date + 'T00:00:00').toISOString());
+  const end   = encodeURIComponent(new Date(date + 'T23:59:59').toISOString());
+  const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${start}&timeMax=${end}&singleEvents=true&orderBy=startTime&timeZone=${encodeURIComponent(tz)}`;
+
+  let res;
+  try { res = await fetch(url, { headers: { Authorization: `Bearer ${gcalToken}` } }); }
+  catch(e) { return; }
+
+  if (res.status === 401) { gcalToken = null; renderGcalBanner(); return; }
+  const data = await res.json();
+  if (!data.items) return;
+
+  if (!appState.agenda[date]) appState.agenda[date] = [];
+  let changed = false;
+  data.items.forEach(ev => {
+    if ((appState.agenda[date] || []).some(e => e.gcalId === ev.id)) return;
+    const dt = ev.start?.dateTime;
+    const timeStr = dt ? new Date(dt).toTimeString().slice(0,5) : '';
+    appState.agenda[date].push({
+      id: Date.now() + Math.random(),
+      gcalId: ev.id,
+      title: ev.summary || '(sem título)',
+      time: timeStr,
+      cal: 'work',
+      done: false,
+      checklist: [],
+      fromGcal: true,
+    });
+    changed = true;
+  });
+  if (changed) { save(); renderAgendaEvents(); }
+}
+
+async function pushEventToGcal(title, time, date) {
+  if (!gcalToken) return null;
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  let startObj, endObj;
+  if (time) {
+    const [h, m] = time.split(':').map(Number);
+    const endH = String(h + 1).padStart(2, '0');
+    startObj = { dateTime: `${date}T${time}:00`, timeZone: tz };
+    endObj   = { dateTime: `${date}T${endH}:${String(m).padStart(2,'0')}:00`, timeZone: tz };
+  } else {
+    startObj = { date };
+    endObj   = { date };
+  }
+  try {
+    const res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${gcalToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ summary: title, start: startObj, end: endObj }),
+    });
+    const data = await res.json();
+    return data.id || null;
+  } catch(e) { return null; }
+}
+
+// ═══════════════════════════════════════════════════════ GOOGLE SHEETS
+
+async function sheetsAppendTo(sheetId, range, values) {
+  if (!gcalToken) return;
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+  try {
+    await fetch(url, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${gcalToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ values }),
+    });
+  } catch(e) { console.error('Sheets append error:', e); }
+}
+
+async function sheetsAppend(range, values) {
+  await sheetsAppendTo(SHEETS_ID, range, values);
+}
+
+async function renameFirstSheet(sheetId, newName) {
+  if (!gcalToken) return;
+  try {
+    const metaRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}?fields=sheets.properties`, {
+      headers: { Authorization: `Bearer ${gcalToken}` }
+    });
+    const meta = await metaRes.json();
+    const firstSheet = meta.sheets?.[0]?.properties;
+    if (!firstSheet || firstSheet.title === newName) return;
+    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}:batchUpdate`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${gcalToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requests: [{ updateSheetProperties: { properties: { sheetId: firstSheet.sheetId, title: newName }, fields: 'title' } }] })
+    });
+  } catch(e) { console.error('Rename sheet error:', e); }
+}
+
+async function initSheetsHeaders() {
+  if (!gcalToken) return;
+  try {
+    await renameFirstSheet(SHEETS_HABITS_ID, 'Hábitos');
+    const hRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_HABITS_ID}/values/${encodeURIComponent('Hábitos!A1')}`, { headers: { Authorization: `Bearer ${gcalToken}` } });
+    const hData = await hRes.json();
+    if (!hData.values) await sheetsAppendTo(SHEETS_HABITS_ID, 'Hábitos!A:E', [['Data', '% Dia', 'Feitos', 'Total', 'Data ISO']]);
+  } catch(e) {}
+  try {
+    await renameFirstSheet(SHEETS_TASKS_ID, 'Tasks');
+    const tRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_TASKS_ID}/values/${encodeURIComponent('Tasks!A1')}`, { headers: { Authorization: `Bearer ${gcalToken}` } });
+    const tData = await tRes.json();
+    if (!tData.values) await sheetsAppendTo(SHEETS_TASKS_ID, 'Tasks!A:F', [['Timestamp', 'Título', 'Categoria', 'Ação', 'Data Criação', 'Data Conclusão']]);
+  } catch(e) {}
+}
+
+async function syncTaskToSheets(task, acao, tab) {
+  if (!gcalToken) return;
+  const now = new Date();
+  const ts = `${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const categoria = tab === 'work' ? 'Trabalho' : 'Pessoal';
+  const row = [ts, task.title, categoria, acao, task.createdDate || '', task.doneDate || ''];
+  await sheetsAppendTo(SHEETS_TASKS_ID, 'Tasks!A:F', [row]);
+}
+
+async function appendLancamentoToSheets(lan) {
+  if (!gcalToken) return;
+  const [ano, mes, dia] = lan.data.split('-');
+  const dataFmt = `${parseInt(mes)}/${parseInt(dia)}/${ano}`;
+  const row = [dataFmt, lan.desc, lan.tipo, lan.cat, lan.val, lan.pag, lan.obs || '', parseInt(mes), parseInt(ano)];
+  await sheetsAppend('Lançamentos!A:I', [row]);
+}
+
+let habitsSaveTimer = null;
+function scheduleHabitsToSheets() {
+  clearTimeout(habitsSaveTimer);
+  habitsSaveTimer = setTimeout(() => saveHabitsToSheets(hojeDate), 3000);
+}
+
+async function saveHabitsToSheets(date) {
+  if (!gcalToken) return;
+  const state = appState.habits[date] || {};
+  const allH = Object.values(appState.habitsDef.items).flat();
+  const total = allH.length;
+  const feitos = allH.filter(h => !!state[h.id]).length;
+  const pct = total > 0 ? Math.round(feitos / total * 100) : 0;
+  const [ano, mes, dia] = date.split('-');
+  const dataFmt = `${dia}/${mes}/${ano}`;
+
+  try {
+    const readUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_HABITS_ID}/values/${encodeURIComponent('Hábitos!A:A')}`;
+    const readRes = await fetch(readUrl, { headers: { Authorization: `Bearer ${gcalToken}` } });
+    const readData = await readRes.json();
+    const rows = readData.values || [];
+    const rowIdx = rows.findIndex(r => r[0] === dataFmt);
+
+    const row = [dataFmt, pct + '%', feitos, total, date];
+    if (rowIdx > 0) {
+      const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_HABITS_ID}/values/${encodeURIComponent(`Hábitos!A${rowIdx + 1}:E${rowIdx + 1}`)}?valueInputOption=USER_ENTERED`;
+      await fetch(updateUrl, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${gcalToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ values: [row] }),
+      });
+    } else {
+      await sheetsAppendTo(SHEETS_HABITS_ID, 'Hábitos!A:E', [row]);
+    }
+  } catch(e) { console.error('Sheets habits error:', e); }
 }
 
 // ═══════════════════════════════════════════════════════ TASKS
@@ -1222,19 +1596,24 @@ function toggleTask(tab, id) {
   t.done = !t.done;
   t.doneDate = t.done ? today() : null;
   save(); renderTasks();
+  syncTaskToSheets(t, t.done ? 'concluída' : 'reaberta', tab);
 }
 
 function deleteTask(tab, id) {
-  appState.tasks[tab] = appState.tasks[tab].filter(t => t.id !== id);
+  const t = appState.tasks[tab].find(x => x.id === id);
+  appState.tasks[tab] = appState.tasks[tab].filter(x => x.id !== id);
   save(); renderTasks();
+  if (t) syncTaskToSheets(t, 'deletada', tab);
 }
 
 function addTask() {
   const inp = document.getElementById('task-inp');
   const val = inp.value.trim(); if (!val) return;
-  appState.tasks[currentTaskTab].push({id: 'T' + Date.now(), title: val, createdDate: today(), done: false, doneDate: null});
+  const t = {id: 'T' + Date.now(), title: val, createdDate: today(), done: false, doneDate: null};
+  appState.tasks[currentTaskTab].push(t);
   inp.value = '';
   save(); renderTasks();
+  syncTaskToSheets(t, 'criada', currentTaskTab);
 }
 document.getElementById('task-inp').addEventListener('keydown', e => { if (e.key === 'Enter') addTask(); });
 
@@ -1255,128 +1634,132 @@ function formatDate(dateStr) {
 }
 
 // ═══════════════════════════════════════════════════════ FINANCEIRO
+const CAT_COLORS = {
+  'Mercado':'#c8f542','Comer Fora':'#c8f542','iFood':'#c8f542',
+  'Academia':'#4da6ff','Jiu Jitsu':'#4da6ff','Médico/Consulta':'#4da6ff','Farmácia':'#4da6ff',
+  'Gasolina':'#fbbf24','Uber/99':'#fbbf24','Metro/Bus':'#fbbf24',
+  'Aluguel':'#a78bfa','Contas':'#a78bfa','Internet':'#a78bfa',
+  'Bar/Balada':'#ff6b6b','Rolê/Saída':'#ff6b6b','Cinema/Evento':'#ff6b6b',
+  'Assinaturas':'#64748b','Educação':'#64748b','Cuidados Pessoais':'#64748b',
+  'Parcelado':'#f97316','Dívidas':'#f97316',
+  'Extra/Emergência':'#94a3b8','Outros':'#94a3b8',
+};
+
+const CAT_MAE = {
+  'Mercado':'Alimentação','Comer Fora':'Alimentação','iFood':'Alimentação',
+  'Academia':'Saúde','Jiu Jitsu':'Saúde','Médico/Consulta':'Saúde','Farmácia':'Saúde',
+  'Gasolina':'Transporte','Uber/99':'Transporte','Metro/Bus':'Transporte',
+  'Aluguel':'Moradia','Contas':'Moradia','Internet':'Moradia',
+  'Bar/Balada':'Lazer','Rolê/Saída':'Lazer','Cinema/Evento':'Lazer',
+  'Assinaturas':'Assinaturas','Educação':'Educação','Cuidados Pessoais':'Cuidados Pessoais',
+  'Parcelado':'Dívidas','Dívidas':'Dívidas',
+  'Extra/Emergência':'Extra/Emergência','Outros':'Outros',
+};
+
 function loadFin() {
-  const f = appState.fin;
-  document.getElementById('f-prolabore').value = f.prolabore || '';
-  document.getElementById('f-extra').value = f.extra || '';
-  document.getElementById('f-despesa').value = f.despesa || 2000;
   const now = new Date();
-  document.getElementById('f-mes-lbl').textContent = MONTHS_SHORT[now.getMonth()] + ' ' + now.getFullYear();
-  calcFin();
-  document.getElementById('m-res-alvo').value = f.metas.resAlvo || '';
-  document.getElementById('m-res-atual').value = f.metas.resAtual || '';
-  document.getElementById('m-aporte').value = f.metas.aporte || '';
-  document.getElementById('m-esp-nome').value = f.metas.espNome || '';
-  document.getElementById('m-esp-alvo').value = f.metas.espAlvo || '';
-  document.getElementById('m-esp-atual').value = f.metas.espAtual || '';
-  calcMetas(); renderLan();
+  document.getElementById('f-mes-lbl').textContent = MONTHS[now.getMonth()] + ' ' + now.getFullYear();
+  // set default date to today
+  const dateInp = document.getElementById('lan-data');
+  if (!dateInp.value) dateInp.value = today();
+  calcFinKpis();
+  renderLan();
 }
 
-function calcFin() {
-  const pl = parseFloat(document.getElementById('f-prolabore').value) || 0;
-  const ex = parseFloat(document.getElementById('f-extra').value) || 0;
-  const desp = parseFloat(document.getElementById('f-despesa').value) || 2000;
-  const renda = pl + ex; const sobra = Math.max(0, renda - desp);
-  document.getElementById('f-renda').textContent = 'R$' + renda.toLocaleString('pt-BR');
-  document.getElementById('f-sobra').textContent = 'R$' + sobra.toLocaleString('pt-BR');
-  document.getElementById('f-res').textContent = 'R$' + (desp * 6).toLocaleString('pt-BR');
-  document.getElementById('f-aporte').textContent = 'R$' + Math.round(sobra * 0.2).toLocaleString('pt-BR');
-  const resAtual = parseFloat(document.getElementById('m-res-atual')?.value) || appState.fin.metas.resAtual || 0;
-  const resPct = desp > 0 ? Math.min(100, Math.round(resAtual / (desp * 6) * 100)) : 0;
-  document.getElementById('f-res-bar').style.width = resPct + '%';
-  renderDistrib(sobra);
-}
+function calcFinKpis() {
+  const mes = new Date().toISOString().slice(0,7);
+  const items = (appState.fin.lan || []).filter(l => l.mes === mes);
+  const receita = items.filter(l => l.tipo === 'Receita').reduce((s,l) => s + l.val, 0);
+  const despesa = items.filter(l => l.tipo === 'Despesa').reduce((s,l) => s + l.val, 0);
+  const saldo = receita - despesa;
+  const taxa = receita > 0 ? Math.round((saldo / receita) * 100) : 0;
 
-function renderDistrib(sobra) {
-  const el = document.getElementById('f-distrib'); if (!el) return; el.innerHTML = '';
-  if (sobra <= 0) { el.innerHTML = '<div class="empty">Defina renda acima das despesas.</div>'; return; }
-  const cats = [
-    {n:'Reserva de emergência', p:30, c:'var(--accent)'},
-    {n:'Investimento',          p:20, c:'var(--blue)'},
-    {n:'Meta específica',       p:15, c:'var(--purple)'},
-    {n:'Lazer consciente',      p:10, c:'var(--amber)'},
-    {n:'Buffer / imprevistos',  p:25, c:'var(--muted)'},
-  ];
-  cats.forEach(c => {
-    const val = Math.round(sobra * (c.p / 100));
-    const row = document.createElement('div'); row.className = 'distrib-row';
-    row.innerHTML = `<div class="distrib-dot" style="background:${c.c}"></div><span class="distrib-cat">${c.n}</span><span class="distrib-pct">${c.p}%</span><span class="distrib-val">R$${val.toLocaleString('pt-BR')}</span>`;
-    el.appendChild(row);
+  document.getElementById('f-receita').textContent = 'R$' + receita.toLocaleString('pt-BR');
+  document.getElementById('f-despesa-v').textContent = 'R$' + despesa.toLocaleString('pt-BR');
+  document.getElementById('f-saldo').textContent = (saldo >= 0 ? '+' : '') + 'R$' + saldo.toLocaleString('pt-BR');
+  document.getElementById('f-saldo').className = 'fin-kpi-v ' + (saldo >= 0 ? 'pos' : 'neg');
+  document.getElementById('f-taxa').textContent = 'Taxa de economia: ' + taxa + '%';
+  document.getElementById('f-saldo-card').className = 'fin-kpi ' + (saldo >= 0 ? 'saldo-pos' : 'saldo-neg');
+
+  // top categories
+  const catTotals = {};
+  items.filter(l => l.tipo === 'Despesa').forEach(l => {
+    const mae = CAT_MAE[l.cat] || l.cat;
+    catTotals[mae] = (catTotals[mae] || 0) + l.val;
   });
-}
-
-function saveFin() {
-  appState.fin.prolabore = parseFloat(document.getElementById('f-prolabore').value) || 0;
-  appState.fin.extra = parseFloat(document.getElementById('f-extra').value) || 0;
-  appState.fin.despesa = parseFloat(document.getElementById('f-despesa').value) || 2000;
-  save(); calcFin();
+  const sorted = Object.entries(catTotals).sort((a,b) => b[1]-a[1]);
+  const catCard = document.getElementById('f-cats-card');
+  const catEl = document.getElementById('f-cats');
+  if (sorted.length === 0) { catCard.style.display = 'none'; }
+  else {
+    catCard.style.display = 'block';
+    catEl.innerHTML = '';
+    const max = sorted[0][1];
+    const maiorNome = sorted[0][0];
+    const maiorVal = sorted[0][1];
+    document.getElementById('f-maior-cat').textContent = maiorNome;
+    document.getElementById('f-maior-val').textContent = 'R$' + maiorVal.toLocaleString('pt-BR');
+    sorted.slice(0,6).forEach(([cat, val]) => {
+      const color = Object.entries(CAT_COLORS).find(([k]) => (CAT_MAE[k]||k) === cat)?.[1] || '#64748b';
+      const row = document.createElement('div'); row.className = 'cat-row';
+      const pct = Math.round((val/max)*100);
+      row.innerHTML = `<div class="cat-dot" style="background:${color}"></div><span class="cat-name">${cat}</span><div class="cat-bar-wrap"><div class="cat-bar-f" style="width:${pct}%;background:${color}"></div></div><span class="cat-val">R$${val.toLocaleString('pt-BR')}</span>`;
+      catEl.appendChild(row);
+    });
+  }
 }
 
 function addLan() {
   const desc = document.getElementById('lan-desc').value.trim();
   const val = parseFloat(document.getElementById('lan-val').value) || 0;
+  const tipo = document.getElementById('lan-tipo').value;
   const cat = document.getElementById('lan-cat').value;
+  const pag = document.getElementById('lan-pag').value;
+  const obs = document.getElementById('lan-obs').value.trim();
+  const data = document.getElementById('lan-data').value || today();
   if (!desc || !val) return;
-  const mes = new Date().toISOString().slice(0,7);
-  appState.fin.lan.push({desc, val, cat, mes, id: Date.now()});
+  const mes = data.slice(0,7);
+  const lan = {id:Date.now(), desc, val, tipo, cat, pag, obs, data, mes};
+  appState.fin.lan.push(lan);
   document.getElementById('lan-desc').value = '';
   document.getElementById('lan-val').value = '';
-  save(); renderLan();
+  document.getElementById('lan-obs').value = '';
+  save(); calcFinKpis(); renderLan();
+  appendLancamentoToSheets(lan);
 }
 document.getElementById('lan-desc').addEventListener('keydown', e => { if (e.key === 'Enter') addLan(); });
 
 function renderLan() {
   const el = document.getElementById('lan-list'); if (!el) return; el.innerHTML = '';
   const mes = new Date().toISOString().slice(0,7);
-  const items = (appState.fin.lan || []).filter(l => l.mes === mes).sort((a,b) => b.id - a.id);
-  let total = 0;
+  const items = (appState.fin.lan || []).filter(l => l.mes === mes)
+    .sort((a,b) => (b.data||'').localeCompare(a.data||'') || b.id - a.id);
+  let totalDesp = 0;
   if (items.length === 0) { el.innerHTML = '<div class="empty">Nenhum lançamento este mês.</div>'; }
   items.forEach(l => {
-    total += l.val;
-    const lMap = {fix:['Fixo','g-fix'], var:['Var','g-var'], inv:['Inv','g-inv']};
-    const [lt, lc] = lMap[l.cat] || ['Fixo','g-fix'];
+    if (l.tipo === 'Despesa') totalDesp += l.val;
+    const isDesp = l.tipo === 'Despesa';
     const row = document.createElement('div'); row.className = 'gasto-item';
-    row.innerHTML = `<span class="gasto-lbl ${lc}">${lt}</span><span class="g-name">${l.desc}</span><span class="g-val">R$${l.val.toLocaleString('pt-BR')}</span><button class="g-del" onclick="delLan(${l.id})">×</button>`;
+    const dataFmt = l.data ? new Date(l.data+'T12:00:00').getDate() + '/' + (new Date(l.data+'T12:00:00').getMonth()+1) : '';
+    row.innerHTML = `
+      <span class="gasto-tipo ${isDesp?'g-desp':'g-rec'}">${isDesp?'Desp':'Rec'}</span>
+      <div class="gasto-body">
+        <div class="g-name">${l.desc}</div>
+        <div class="g-meta">
+          <span class="g-cat">${l.cat}</span>
+          <span class="g-pag">${l.pag||''}</span>
+          ${dataFmt ? `<span class="g-cat">${dataFmt}</span>` : ''}
+        </div>
+        ${l.obs ? `<div class="g-obs">${l.obs}</div>` : ''}
+      </div>
+      <span class="g-val ${isDesp?'desp':'rec'}">${isDesp?'-':'+'} R$${l.val.toLocaleString('pt-BR')}</span>
+      <button class="g-del" onclick="delLan(${l.id})">×</button>`;
     el.appendChild(row);
   });
-  document.getElementById('lan-total').textContent = 'R$' + total.toLocaleString('pt-BR');
-}
-function delLan(id) { appState.fin.lan = appState.fin.lan.filter(l => l.id !== id); save(); renderLan(); }
-
-function calcMetas() {
-  const resAlvo = parseFloat(document.getElementById('m-res-alvo')?.value) || 0;
-  const resAtual = parseFloat(document.getElementById('m-res-atual')?.value) || 0;
-  const aporte = parseFloat(document.getElementById('m-aporte')?.value) || 0;
-  const espAlvo = parseFloat(document.getElementById('m-esp-alvo')?.value) || 0;
-  const espAtual = parseFloat(document.getElementById('m-esp-atual')?.value) || 0;
-  const resPct = resAlvo > 0 ? Math.min(100, Math.round(resAtual / resAlvo * 100)) : 0;
-  const resBar = document.getElementById('m-res-bar'); if (resBar) resBar.style.width = resPct + '%';
-  const resInfo = document.getElementById('m-res-info');
-  if (resInfo) resInfo.textContent = resAlvo > 0 ? `R$${resAtual.toLocaleString('pt-BR')} de R$${resAlvo.toLocaleString('pt-BR')} (${resPct}%)` : 'Regra: 6x sua despesa mensal';
-  const apInfo = document.getElementById('m-aporte-info');
-  if (apInfo && aporte > 0) {
-    const meses = resAlvo > resAtual && aporte > 0 ? Math.ceil((resAlvo - resAtual) / aporte) : 0;
-    apInfo.textContent = meses > 0 ? `Com R$${aporte.toLocaleString('pt-BR')}/mês — reserva completa em ${meses} meses.` : `Aporte definido: R$${aporte.toLocaleString('pt-BR')}/mês.`;
-  }
-  const espPct = espAlvo > 0 ? Math.min(100, Math.round(espAtual / espAlvo * 100)) : 0;
-  const espBar = document.getElementById('m-esp-bar'); if (espBar) espBar.style.width = espPct + '%';
-  const espInfo = document.getElementById('m-esp-info');
-  const espNome = document.getElementById('m-esp-nome')?.value || 'Meta';
-  if (espInfo && espAlvo > 0) espInfo.textContent = `${espNome}: R$${espAtual.toLocaleString('pt-BR')} de R$${espAlvo.toLocaleString('pt-BR')} (${espPct}%)`;
-  calcFin();
+  document.getElementById('lan-total').textContent = 'R$' + totalDesp.toLocaleString('pt-BR');
 }
 
-function saveMetas() {
-  appState.fin.metas = {
-    resAlvo: parseFloat(document.getElementById('m-res-alvo').value) || 0,
-    resAtual: parseFloat(document.getElementById('m-res-atual').value) || 0,
-    aporte: parseFloat(document.getElementById('m-aporte').value) || 0,
-    espNome: document.getElementById('m-esp-nome').value || '',
-    espAlvo: parseFloat(document.getElementById('m-esp-alvo').value) || 0,
-    espAtual: parseFloat(document.getElementById('m-esp-atual').value) || 0,
-  };
-  save(); calcMetas();
-}
+function delLan(id) { appState.fin.lan = appState.fin.lan.filter(l => l.id !== id); save(); calcFinKpis(); renderLan(); }
 
 // ═══════════════════════════════════════════════════════ MODAL UTILS
 function openModal(id) { document.getElementById(id).classList.add('open'); }
