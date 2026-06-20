@@ -880,6 +880,14 @@ html, body {
       </div>
     </div>
     <div class="form-group">
+      <div class="form-lbl">Repetição</div>
+      <select class="form-sel" id="ev-repeat">
+        <option value="none">Não repete</option>
+        <option value="weekly">Toda semana</option>
+        <option value="daily">Todo dia</option>
+      </select>
+    </div>
+    <div class="form-group">
       <div class="form-lbl">Checklist (opcional — um item por linha)</div>
       <textarea class="form-inp" id="ev-checklist" rows="4" placeholder="Entrar no portal&#10;Selecionar propriedade&#10;Inserir valor&#10;Confirmar pagamento" style="resize:none;line-height:1.6"></textarea>
     </div>
@@ -961,6 +969,7 @@ let appState = {
   habits: {}, hist: [],
   habitsDef: null,
   agenda: {},
+  recurring: [],
   tasks: { work: [], pessoal: [] },
   fin: { lan: [] },
 };
@@ -975,6 +984,7 @@ try {
     if (!appState.tasks.pessoal) appState.tasks.pessoal = [];
     if (!appState.agenda) appState.agenda = {};
     if (!appState.fin) appState.fin = {lan:[]};
+    if (!appState.recurring) appState.recurring = [];
   }
 } catch(e) {}
 
@@ -1251,39 +1261,123 @@ function renderAgenda() {
   fetchGcalEvents(agendaDate);
 }
 
+function getRecurringForDay(date) {
+  return (appState.recurring || []).filter(r => {
+    if (date < r.startDate) return false;
+    if (r.endDate && date > r.endDate) return false;
+    if ((r.exceptions || []).includes(date)) return false;
+    if (r.recurrence === 'daily') return true;
+    if (r.recurrence === 'weekly') {
+      const startDow = new Date(r.startDate + 'T12:00:00').getDay();
+      const curDow = new Date(date + 'T12:00:00').getDay();
+      return startDow === curDow;
+    }
+    return false;
+  }).map(r => {
+    const instance = (appState.agenda[date] || []).find(e => e.recurringId === r.id);
+    return {
+      ...r,
+      done: instance ? instance.done : false,
+      checklist: instance ? instance.checklist : (r.checklist || []).map(c => ({...c, done: false})),
+      _recurring: true,
+    };
+  });
+}
+
 function renderAgendaEvents() {
   const el = document.getElementById('agenda-events');
   el.innerHTML = '';
-  const events = (appState.agenda[agendaDate] || []).sort((a,b) => (a.time||'99:99').localeCompare(b.time||'99:99'));
 
-  if (events.length === 0) {
+  const regular = (appState.agenda[agendaDate] || [])
+    .filter(e => !e.recurringId)
+    .map((ev, i) => ({...ev, _idx: i, _recurring: false}));
+
+  const recurring = getRecurringForDay(agendaDate);
+
+  const allEvents = [...regular, ...recurring]
+    .sort((a,b) => (a.time||'99:99').localeCompare(b.time||'99:99'));
+
+  if (allEvents.length === 0) {
     el.innerHTML = '<div class="empty">Nenhum evento. Adiciona um acima.</div>';
     return;
   }
 
-  events.forEach((ev, i) => {
+  allEvents.forEach(ev => {
     const item = document.createElement('div');
     item.className = 'event-item';
-
     const hasCl = ev.checklist && ev.checklist.length > 0;
     const clDone = hasCl ? ev.checklist.filter(c => c.done).length : 0;
 
+    const toggleFn = ev._recurring
+      ? `toggleRecurring('${agendaDate}',${ev.id})`
+      : `toggleEvent('${agendaDate}',${ev._idx})`;
+    const deleteFn = ev._recurring
+      ? `deleteRecurring('${agendaDate}',${ev.id})`
+      : `deleteEvent('${agendaDate}',${ev._idx})`;
+    const clFn = ev._recurring
+      ? `openChecklistRecurring('${agendaDate}',${ev.id})`
+      : `openChecklist('${agendaDate}',${ev._idx})`;
+
     item.innerHTML = `
       <div class="event-time">${ev.time || '—'}</div>
-      <div class="event-body" onclick="${hasCl ? `openChecklist('${agendaDate}',${i})` : `toggleEvent('${agendaDate}',${i})`}">
+      <div class="event-body" onclick="${hasCl ? clFn : toggleFn}">
         <div class="event-title${ev.done?' done':''}">${ev.title}</div>
         <span class="event-cal cal-${ev.cal}">${ev.cal === 'work' ? 'Trabalho' : 'Pessoal'}</span>
+        ${ev._recurring ? `<span style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;margin-left:6px">↻ ${ev.recurrence === 'weekly' ? 'Semanal' : 'Diário'}</span>` : ''}
         ${hasCl ? `<div class="event-has-checklist">☑ Checklist ${clDone}/${ev.checklist.length}</div>` : ''}
         ${ev.fromGcal ? `<div style="font-size:10px;color:var(--blue);margin-top:2px;font-weight:600">GCal</div>` : ''}
       </div>
       <div class="event-actions">
-        <div class="event-chk${ev.done?' on':''}" onclick="toggleEvent('${agendaDate}',${i})">
+        <div class="event-chk${ev.done?' on':''}" onclick="${toggleFn}">
           <svg viewBox="0 0 11 8" fill="none"><path d="M1 4l3 3 6-6" stroke="#0c0c0e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
-        <button style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:14px;padding:0" onclick="deleteEvent('${agendaDate}',${i})">×</button>
+        <button style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:14px;padding:0" onclick="${deleteFn}">×</button>
       </div>`;
     el.appendChild(item);
   });
+}
+
+function toggleRecurring(date, recurringId) {
+  const r = appState.recurring.find(x => x.id === recurringId);
+  if (!r) return;
+  if (!appState.agenda[date]) appState.agenda[date] = [];
+  const instance = appState.agenda[date].find(e => e.recurringId === recurringId);
+  if (instance) {
+    instance.done = !instance.done;
+  } else {
+    appState.agenda[date].push({
+      id: Date.now(), recurringId: r.id,
+      title: r.title, time: r.time, cal: r.cal, done: true,
+      checklist: (r.checklist || []).map(c => ({...c, done: false})),
+    });
+  }
+  save(); renderAgendaEvents();
+}
+
+function deleteRecurring(date, recurringId) {
+  const r = appState.recurring.find(x => x.id === recurringId);
+  if (!r) return;
+  if (!r.exceptions) r.exceptions = [];
+  r.exceptions.push(date);
+  if (appState.agenda[date]) {
+    appState.agenda[date] = appState.agenda[date].filter(e => e.recurringId !== recurringId);
+  }
+  save(); renderAgendaEvents();
+}
+
+function openChecklistRecurring(date, recurringId) {
+  const r = appState.recurring.find(x => x.id === recurringId);
+  if (!r || !r.checklist?.length) return;
+  if (!appState.agenda[date]) appState.agenda[date] = [];
+  let instance = appState.agenda[date].find(e => e.recurringId === recurringId);
+  if (!instance) {
+    instance = {id: Date.now(), recurringId: r.id, title: r.title, time: r.time, cal: r.cal, done: false,
+      checklist: r.checklist.map(c => ({...c, done: false}))};
+    appState.agenda[date].push(instance);
+    save();
+  }
+  const idx = appState.agenda[date].indexOf(instance);
+  openChecklist(date, idx);
 }
 
 function toggleEvent(date, i) {
@@ -1302,6 +1396,7 @@ function openAddEvent() {
   document.getElementById('ev-title').value = '';
   document.getElementById('ev-time').value = '';
   document.getElementById('ev-cal').value = 'work';
+  document.getElementById('ev-repeat').value = 'none';
   document.getElementById('ev-checklist').value = '';
   openModal('modal-add-event');
 }
@@ -1311,12 +1406,17 @@ async function saveEvent() {
   if (!title) return;
   const time = document.getElementById('ev-time').value;
   const cal = document.getElementById('ev-cal').value;
+  const repeat = document.getElementById('ev-repeat').value;
   const clRaw = document.getElementById('ev-checklist').value.trim();
   const checklist = clRaw ? clRaw.split('\n').filter(l => l.trim()).map(l => ({t: l.trim(), done: false})) : [];
 
-  if (!appState.agenda[agendaDate]) appState.agenda[agendaDate] = [];
-  const gcalId = await pushEventToGcal(title, time, agendaDate);
-  appState.agenda[agendaDate].push({id: Date.now(), gcalId: gcalId || null, title, time, cal, done: false, checklist});
+  if (repeat !== 'none') {
+    appState.recurring.push({id: Date.now(), title, time, cal, checklist, recurrence: repeat, startDate: agendaDate, exceptions: []});
+  } else {
+    if (!appState.agenda[agendaDate]) appState.agenda[agendaDate] = [];
+    const gcalId = await pushEventToGcal(title, time, agendaDate);
+    appState.agenda[agendaDate].push({id: Date.now(), gcalId: gcalId || null, title, time, cal, done: false, checklist});
+  }
   save();
   closeModal('modal-add-event');
   renderAgendaEvents();
