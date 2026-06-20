@@ -1551,16 +1551,39 @@ const SHEETS_TASKS_ID  = '1AE5WXivJceb7GB1E-qS-Ab-vJxsvQTsgqDzh9mWaVjA';
 let gcalToken = null;
 let tokenClient = null;
 
+function saveGcalToken(token) {
+  try { localStorage.setItem('gcal_session', JSON.stringify({token, expiry: Date.now() + 3500 * 1000})); } catch(e) {}
+}
+function clearGcalToken() {
+  localStorage.removeItem('gcal_session');
+}
+function getSavedGcalToken() {
+  try {
+    const d = JSON.parse(localStorage.getItem('gcal_session') || 'null');
+    if (d && d.token && d.expiry > Date.now()) return d.token;
+  } catch(e) {}
+  return null;
+}
+
 function initGoogleAuth() {
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: GCAL_CLIENT_ID,
     scope: GCAL_SCOPE,
     callback: (resp) => {
-      if (resp.error) { console.error('GCal auth error:', resp.error); return; }
+      if (resp.error) { return; }
       gcalToken = resp.access_token;
+      saveGcalToken(gcalToken);
       onGcalConnected();
     },
   });
+  // Restore saved token or try silent refresh
+  const saved = getSavedGcalToken();
+  if (saved) {
+    gcalToken = saved;
+    onGcalConnected();
+  } else {
+    tokenClient.requestAccessToken({prompt: ''});
+  }
 }
 
 function connectGcal() {
@@ -1571,6 +1594,7 @@ function connectGcal() {
 function disconnectGcal() {
   if (gcalToken) google.accounts.oauth2.revoke(gcalToken);
   gcalToken = null;
+  clearGcalToken();
   renderGcalBanner();
 }
 
@@ -1839,6 +1863,7 @@ async function saveStateToSheets() {
       habits: appState.habits,
       tasks: appState.tasks,
       recurring: appState.recurring,
+      agenda: appState.agenda,
     };
     const ts = new Date().toISOString();
     await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_HABITS_ID}/values/${encodeURIComponent('Estado!A2:B2')}?valueInputOption=USER_ENTERED`, {
@@ -1872,6 +1897,16 @@ async function loadStateFromSheets() {
       if (payload.tasks.pessoal) appState.tasks.pessoal = payload.tasks.pessoal;
     }
     if (payload.recurring) appState.recurring = payload.recurring;
+    if (payload.agenda) {
+      Object.keys(payload.agenda).forEach(date => {
+        if (!appState.agenda[date]) appState.agenda[date] = [];
+        payload.agenda[date].forEach(ev => {
+          if (!appState.agenda[date].some(e => e.id === ev.id)) {
+            appState.agenda[date].push(ev);
+          }
+        });
+      });
+    }
     save();
     renderHoje();
     renderTasks();
