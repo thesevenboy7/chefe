@@ -1559,7 +1559,7 @@ function clearGcalToken() {
 function getSavedGcalToken() {
   try {
     const d = JSON.parse(localStorage.getItem('gcal_session') || 'null');
-    if (d && d.token && d.expiry > Date.now()) return d.token;
+    if (d && d.token && d.expiry >= Date.now()) return d.token;
   } catch(e) {}
   return null;
 }
@@ -1626,7 +1626,7 @@ async function fetchGcalEvents(date) {
   try { res = await fetch(url, { headers: { Authorization: `Bearer ${gcalToken}` } }); }
   catch(e) { return; }
 
-  if (res.status === 401) { gcalToken = null; renderGcalBanner(); return; }
+  if (res.status === 401) { gcalToken = null; clearGcalToken(); renderGcalBanner(); return; }
   const data = await res.json();
   if (!data.items) return;
 
@@ -1813,7 +1813,7 @@ async function saveHabitsToSheets(date) {
     const rowIdx = rows.findIndex(r => r[0] === dataFmt);
 
     const row = [dataFmt, pct + '%', feitos, total, date];
-    if (rowIdx > 0) {
+    if (rowIdx > 0) { // rowIdx 0 = header, data starts at 1
       const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_HABITS_ID}/values/${encodeURIComponent(`Hábitos!A${rowIdx + 1}:E${rowIdx + 1}`)}?valueInputOption=USER_ENTERED`;
       await fetch(updateUrl, {
         method: 'PUT',
