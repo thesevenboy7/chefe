@@ -466,6 +466,36 @@ html, body {
 .g-val.rec { color:var(--accent); }
 .g-del { background:none; border:none; color:var(--muted2); cursor:pointer; font-size:16px; padding:0 2px; flex-shrink:0; }
 
+/* SWIPE DELETE */
+.gasto-wrap { position:relative; overflow:hidden; border-bottom:1px solid var(--border); }
+.gasto-wrap:last-child { border-bottom:none; }
+.gasto-wrap .gasto-item { border-bottom:none; touch-action:pan-y; will-change:transform; }
+.swipe-del-btn {
+  position:absolute; right:0; top:0; bottom:0; width:80px;
+  background:var(--red); color:#fff; font-size:11px; font-weight:700;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; font-family:'DM Mono',monospace; letter-spacing:.06em;
+  border:none;
+}
+
+/* SETTINGS BUTTON */
+.header-settings {
+  background:none; border:none; color:var(--muted); cursor:pointer;
+  padding:4px; display:flex; align-items:center; margin-right:8px;
+}
+.header-settings svg { width:18px; height:18px; }
+
+/* BACKUP BTNS */
+.backup-row { display:flex; gap:8px; margin-top:8px; }
+.backup-btn {
+  flex:1; padding:11px; border-radius:var(--r); font-size:13px; font-weight:600;
+  cursor:pointer; font-family:'Syne',sans-serif; letter-spacing:.04em;
+  border:1px solid var(--border2); background:transparent; color:var(--text);
+  transition:background .15s;
+}
+.backup-btn:active { background:var(--surface2); }
+.backup-btn.danger { border-color:var(--red-dim); color:var(--red); }
+
 .fin-total-row { display:flex; justify-content:space-between; padding:10px 0 0; font-size:13px; color:var(--muted); border-top:1px solid var(--border); margin-top:4px; }
 .save-btn {
   width:100%; padding:12px; border-radius:var(--r);
@@ -581,7 +611,14 @@ html, body {
     </div>
     <span class="logo-name">Chefe</span>
   </div>
-  <div class="header-date" id="hdr-date"></div>
+  <div style="display:flex;align-items:center">
+    <button class="header-settings" onclick="openModal('modal-settings')" title="Configurações">
+      <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8">
+        <circle cx="11" cy="11" r="3"/><path d="M11 2v2M11 18v2M2 11h2M18 11h2M4.9 4.9l1.4 1.4M15.7 15.7l1.4 1.4M4.9 17.1l1.4-1.4M15.7 6.3l1.4-1.4"/>
+      </svg>
+    </button>
+    <div class="header-date" id="hdr-date"></div>
+  </div>
 </div>
 
 <!-- CONTENT -->
@@ -949,6 +986,38 @@ html, body {
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeModal('modal-add-event')">Cancelar</button>
       <button class="btn-confirm" onclick="saveEvent()">Salvar evento</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ MODAL CONFIRM -->
+<div class="modal-overlay" id="modal-confirm">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" style="font-size:16px" id="confirm-title">Excluir?</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:4px" id="confirm-msg"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('modal-confirm')">Cancelar</button>
+      <button class="btn-confirm" style="background:var(--red)" id="confirm-ok-btn">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ MODAL SETTINGS -->
+<div class="modal-overlay" id="modal-settings">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Dados & Backup</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6">Exporta todos os dados do app como JSON. Guarda o arquivo e importa para restaurar em qualquer dispositivo.</div>
+    <div class="backup-row">
+      <button class="backup-btn" onclick="exportData()">Exportar JSON</button>
+      <label class="backup-btn" style="text-align:center;cursor:pointer">
+        Importar JSON
+        <input type="file" accept=".json" style="display:none" onchange="importData(this)">
+      </label>
+    </div>
+    <div class="modal-btns" style="margin-top:16px">
+      <button class="btn-cancel" onclick="closeModal('modal-settings')">Fechar</button>
     </div>
   </div>
 </div>
@@ -1413,12 +1482,14 @@ function toggleRecurring(date, recurringId) {
 function deleteRecurring(date, recurringId) {
   const r = appState.recurring.find(x => x.id === recurringId);
   if (!r) return;
-  if (!r.exceptions) r.exceptions = [];
-  r.exceptions.push(date);
-  if (appState.agenda[date]) {
-    appState.agenda[date] = appState.agenda[date].filter(e => e.recurringId !== recurringId);
-  }
-  save(); renderAgendaEvents();
+  confirmDelete(`"${r.title}"`, () => {
+    if (!r.exceptions) r.exceptions = [];
+    r.exceptions.push(date);
+    if (appState.agenda[date]) {
+      appState.agenda[date] = appState.agenda[date].filter(e => e.recurringId !== recurringId);
+    }
+    save(); renderAgendaEvents();
+  });
 }
 
 function openChecklistRecurring(date, recurringId) {
@@ -1444,8 +1515,11 @@ function toggleEvent(date, i) {
 
 function deleteEvent(date, i) {
   if (!appState.agenda[date]) return;
-  appState.agenda[date].splice(i, 1);
-  save(); renderAgendaEvents();
+  const ev = appState.agenda[date][i];
+  confirmDelete(ev ? `"${ev.title}"` : 'este evento', () => {
+    appState.agenda[date].splice(i, 1);
+    save(); renderAgendaEvents();
+  });
 }
 
 function openAddEvent() {
@@ -1871,9 +1945,12 @@ function toggleTask(tab, id) {
 
 function deleteTask(tab, id) {
   const t = appState.tasks[tab].find(x => x.id === id);
-  appState.tasks[tab] = appState.tasks[tab].filter(x => x.id !== id);
-  save(); renderTasks();
-  if (t) syncTaskToSheets(t, 'deletada', tab);
+  if (!t) return;
+  confirmDelete(`"${t.title}"`, () => {
+    appState.tasks[tab] = appState.tasks[tab].filter(x => x.id !== id);
+    save(); renderTasks();
+    syncTaskToSheets(t, 'deletada', tab);
+  });
 }
 
 function addTask() {
@@ -2108,31 +2185,100 @@ function renderLan() {
   items.forEach(l => {
     if (l.tipo === 'Despesa') totalDesp += l.val;
     const isDesp = l.tipo === 'Despesa';
-    const row = document.createElement('div'); row.className = 'gasto-item';
+    const wrap = document.createElement('div'); wrap.className = 'gasto-wrap';
     const dataFmt = l.data ? new Date(l.data+'T12:00:00').getDate() + '/' + (new Date(l.data+'T12:00:00').getMonth()+1) : '';
-    row.innerHTML = `
-      <span class="gasto-tipo ${isDesp?'g-desp':'g-rec'}">${isDesp?'Desp':'Rec'}</span>
-      <div class="gasto-body">
-        <div class="g-name">${l.desc}</div>
-        <div class="g-meta">
-          <span class="g-cat">${l.cat}</span>
-          <span class="g-pag">${l.pag||''}</span>
-          ${dataFmt ? `<span class="g-cat">${dataFmt}</span>` : ''}
+    wrap.innerHTML = `
+      <div class="gasto-item">
+        <span class="gasto-tipo ${isDesp?'g-desp':'g-rec'}">${isDesp?'Desp':'Rec'}</span>
+        <div class="gasto-body">
+          <div class="g-name">${l.desc}</div>
+          <div class="g-meta">
+            <span class="g-cat">${l.cat}</span>
+            <span class="g-pag">${l.pag||''}</span>
+            ${dataFmt ? `<span class="g-cat">${dataFmt}</span>` : ''}
+          </div>
+          ${l.obs ? `<div class="g-obs">${l.obs}</div>` : ''}
         </div>
-        ${l.obs ? `<div class="g-obs">${l.obs}</div>` : ''}
+        <span class="g-val ${isDesp?'desp':'rec'}">${isDesp?'-':'+'} R$${l.val.toLocaleString('pt-BR')}</span>
+        <button class="g-del" onclick="delLan(${l.id})">×</button>
       </div>
-      <span class="g-val ${isDesp?'desp':'rec'}">${isDesp?'-':'+'} R$${l.val.toLocaleString('pt-BR')}</span>
-      <button class="g-del" onclick="delLan(${l.id})">×</button>`;
-    el.appendChild(row);
+      <button class="swipe-del-btn" onclick="delLan(${l.id})">Excluir</button>`;
+    el.appendChild(wrap);
+    addSwipeToDelete(wrap, () => delLan(l.id));
   });
   document.getElementById('lan-total').textContent = 'R$' + totalDesp.toLocaleString('pt-BR');
 }
 
-function delLan(id) { appState.fin.lan = appState.fin.lan.filter(l => l.id !== id); save(); calcFinKpis(); renderLan(); }
+function addSwipeToDelete(wrap, onDelete) {
+  const item = wrap.querySelector('.gasto-item');
+  let startX = 0, curX = 0, swiping = false;
+  const THRESHOLD = 80;
+  item.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX; curX = startX; swiping = true;
+    item.style.transition = 'none';
+  }, {passive: true});
+  item.addEventListener('touchmove', e => {
+    if (!swiping) return;
+    curX = e.touches[0].clientX;
+    const dx = Math.min(0, curX - startX);
+    item.style.transform = `translateX(${dx}px)`;
+  }, {passive: true});
+  item.addEventListener('touchend', () => {
+    if (!swiping) return; swiping = false;
+    const dx = curX - startX;
+    item.style.transition = 'transform .2s';
+    if (dx < -THRESHOLD) {
+      item.style.transform = `translateX(-80px)`;
+    } else {
+      item.style.transform = 'translateX(0)';
+    }
+  });
+}
+
+function delLan(id) {
+  const l = appState.fin.lan.find(x => x.id === id);
+  confirmDelete(l ? `"${l.desc}"` : 'este lançamento', () => {
+    appState.fin.lan = appState.fin.lan.filter(x => x.id !== id);
+    save(); calcFinKpis(); renderLan();
+  });
+}
 
 // ═══════════════════════════════════════════════════════ MODAL UTILS
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function confirmDelete(msg, onConfirm) {
+  document.getElementById('confirm-msg').textContent = msg;
+  document.getElementById('confirm-ok-btn').onclick = () => { closeModal('modal-confirm'); onConfirm(); };
+  openModal('modal-confirm');
+}
+
+// ═══════════════════════════════════════════════════════ BACKUP / RESTORE
+function exportData() {
+  const blob = new Blob([JSON.stringify(appState, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `chefe_backup_${today()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      Object.assign(appState, parsed);
+      save();
+      renderHoje();
+      closeModal('modal-settings');
+      alert('Dados restaurados com sucesso.');
+    } catch { alert('Arquivo inválido.'); }
+  };
+  reader.readAsText(file);
+}
 
 // close modal on overlay click
 document.querySelectorAll('.modal-overlay').forEach(overlay => {
