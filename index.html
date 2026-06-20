@@ -385,7 +385,13 @@ html, body {
 }
 
 /* ADD TASK */
-.add-task-row { display:flex; gap:6px; margin-bottom:12px; }
+.add-task-row { display:flex; gap:6px; margin-bottom:12px; align-items:center; }
+.task-pri-btn {
+  background:none; border:none; font-size:18px; cursor:pointer;
+  flex-shrink:0; color:var(--accent); padding:0 2px; line-height:1;
+  transition:color .15s;
+}
+.task-pri-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; margin-top:3px; }
 .add-task-inp {
   flex:1; font-size:13px; padding:9px 12px;
   border-radius:var(--r-sm); border:1px solid var(--border2);
@@ -654,6 +660,7 @@ html, body {
   </div>
 
   <div class="add-task-row">
+    <button class="task-pri-btn" id="task-pri-toggle" onclick="cycleNewTaskPri()" title="Normal">●</button>
     <input class="add-task-inp" id="task-inp" placeholder="Nova task..." />
     <button class="add-task-btn" onclick="addTask()">+</button>
   </div>
@@ -671,8 +678,13 @@ html, body {
 
 <!-- ═══════════════════════════════════════════════════════ FINANCEIRO -->
 <div id="sec-financeiro" class="sec">
-  <div class="sec-title">Financeiro</div>
-  <div class="sec-sub" id="f-mes-lbl"></div>
+  <div class="day-nav" style="margin-bottom:12px">
+    <button class="day-nav-btn" onclick="finNavMonth(-1)">‹</button>
+    <div class="day-nav-center">
+      <div class="day-nav-lbl" id="f-mes-lbl"></div>
+    </div>
+    <button class="day-nav-btn" id="fin-next-btn" onclick="finNavMonth(1)">›</button>
+  </div>
 
   <!-- KPIs -->
   <div class="fin-kpi-grid">
@@ -1675,10 +1687,10 @@ async function syncTaskToSheets(task, acao, tab) {
   await sheetsAppendTo(SHEETS_TASKS_ID, 'Tasks!A:F', [row]);
 }
 
-async function loadFinFromSheets() {
+async function loadFinFromSheets(targetMonth) {
   if (!gcalToken) return;
   try {
-    const mes = new Date().toISOString().slice(0, 7); // YYYY-MM
+    const mes = targetMonth || new Date().toISOString().slice(0, 7);
     const curMes = parseInt(mes.slice(5, 7));
     const curAno = parseInt(mes.slice(0, 4));
 
@@ -1714,11 +1726,10 @@ async function loadFinFromSheets() {
     });
 
     if (imported.length === 0) return;
-    // Sheet é source of truth: substitui dados locais do mês
     appState.fin.lan = appState.fin.lan.filter(l => l.mes !== mes);
     appState.fin.lan.push(...imported);
     save();
-    if (currentSec === 'financeiro') { calcFinKpis(); renderLan(); }
+    if (currentSec === 'financeiro' && finMonth === mes) { calcFinKpis(); renderLan(); }
   } catch(e) { console.error('loadFinFromSheets error:', e); }
 }
 
@@ -1768,6 +1779,19 @@ async function saveHabitsToSheets(date) {
 }
 
 // ═══════════════════════════════════════════════════════ TASKS
+const PRI_ORDER = {high:0, normal:1, low:2};
+const PRI_COLOR = {high:'var(--red)', normal:'var(--accent)', low:'var(--muted2)'};
+const PRI_LABEL = {high:'Alta', normal:'Normal', low:'Baixa'};
+let newTaskPriority = 'normal';
+
+function cycleNewTaskPri() {
+  const cycle = {high:'normal', normal:'low', low:'high'};
+  newTaskPriority = cycle[newTaskPriority];
+  const btn = document.getElementById('task-pri-toggle');
+  btn.style.color = PRI_COLOR[newTaskPriority];
+  btn.title = PRI_LABEL[newTaskPriority];
+}
+
 let currentTaskTab = 'work';
 
 function switchTaskTab(tab) {
@@ -1794,7 +1818,7 @@ function renderTasks() {
   if (pending.length === 0) {
     pendingEl.innerHTML = '<div class="empty">Tudo limpo. Adiciona uma task acima.</div>';
   } else {
-    pending.sort((a,b) => a.createdDate.localeCompare(b.createdDate)).forEach(t => {
+    pending.sort((a,b) => (PRI_ORDER[a.priority||'normal'] - PRI_ORDER[b.priority||'normal']) || a.createdDate.localeCompare(b.createdDate)).forEach(t => {
       pendingEl.appendChild(buildTaskEl(t));
     });
   }
@@ -1818,7 +1842,9 @@ function buildTaskEl(t) {
 
   const item = document.createElement('div');
   item.className = 'task-item';
+  const pri = t.priority || 'normal';
   item.innerHTML = `
+    <div class="task-pri-dot" style="background:${PRI_COLOR[pri]}" title="${PRI_LABEL[pri]}"></div>
     <div class="chk${t.done?' on':''}" onclick="toggleTask('${currentTaskTab}','${t.id}')">
       <svg viewBox="0 0 11 8" fill="none"><path d="M1 4l3 3 6-6" stroke="#0c0c0e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </div>
@@ -1853,9 +1879,11 @@ function deleteTask(tab, id) {
 function addTask() {
   const inp = document.getElementById('task-inp');
   const val = inp.value.trim(); if (!val) return;
-  const t = {id: 'T' + Date.now(), title: val, createdDate: today(), done: false, doneDate: null};
+  const t = {id: 'T' + Date.now(), title: val, priority: newTaskPriority, createdDate: today(), done: false, doneDate: null};
   appState.tasks[currentTaskTab].push(t);
   inp.value = '';
+  newTaskPriority = 'normal';
+  document.getElementById('task-pri-toggle').style.color = PRI_COLOR['normal'];
   save(); renderTasks();
   syncTaskToSheets(t, 'criada', currentTaskTab);
 }
@@ -1960,6 +1988,7 @@ function renderSemana() {
 }
 
 // ═══════════════════════════════════════════════════════ FINANCEIRO
+let finMonth = new Date().toISOString().slice(0,7);
 const CAT_COLORS = {
   'Mercado':'#c8f542','Comer Fora':'#c8f542','iFood':'#c8f542',
   'Academia':'#4da6ff','Jiu Jitsu':'#4da6ff','Médico/Consulta':'#4da6ff','Farmácia':'#4da6ff',
@@ -1982,10 +2011,24 @@ const CAT_MAE = {
   'Extra/Emergência':'Extra/Emergência','Outros':'Outros',
 };
 
+function finNavMonth(delta) {
+  const [y, m] = finMonth.split('-').map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  const next = d.toISOString().slice(0,7);
+  const cur = new Date().toISOString().slice(0,7);
+  if (next > cur) return;
+  finMonth = next;
+  loadFin();
+  if (gcalToken && finMonth !== cur) loadFinFromSheets(finMonth);
+}
+
 function loadFin() {
-  const now = new Date();
-  document.getElementById('f-mes-lbl').textContent = MONTHS[now.getMonth()] + ' ' + now.getFullYear();
-  // set default date to today
+  const [y, m] = finMonth.split('-').map(Number);
+  document.getElementById('f-mes-lbl').textContent = MONTHS[m-1] + ' ' + y;
+  const cur = new Date().toISOString().slice(0,7);
+  const nextBtn = document.getElementById('fin-next-btn');
+  nextBtn.style.opacity = finMonth >= cur ? '0.3' : '1';
+  nextBtn.style.pointerEvents = finMonth >= cur ? 'none' : 'auto';
   const dateInp = document.getElementById('lan-data');
   if (!dateInp.value) dateInp.value = today();
   calcFinKpis();
@@ -1993,7 +2036,7 @@ function loadFin() {
 }
 
 function calcFinKpis() {
-  const mes = new Date().toISOString().slice(0,7);
+  const mes = finMonth;
   const items = (appState.fin.lan || []).filter(l => l.mes === mes);
   const receita = items.filter(l => l.tipo === 'Receita').reduce((s,l) => s + l.val, 0);
   const despesa = items.filter(l => l.tipo === 'Despesa').reduce((s,l) => s + l.val, 0);
@@ -2057,7 +2100,7 @@ document.getElementById('lan-desc').addEventListener('keydown', e => { if (e.key
 
 function renderLan() {
   const el = document.getElementById('lan-list'); if (!el) return; el.innerHTML = '';
-  const mes = new Date().toISOString().slice(0,7);
+  const mes = finMonth;
   const items = (appState.fin.lan || []).filter(l => l.mes === mes)
     .sort((a,b) => (b.data||'').localeCompare(a.data||'') || b.id - a.id);
   let totalDesp = 0;
