@@ -1576,14 +1576,8 @@ function initGoogleAuth() {
       onGcalConnected();
     },
   });
-  // Restore saved token or try silent refresh
-  const saved = getSavedGcalToken();
-  if (saved) {
-    gcalToken = saved;
-    onGcalConnected();
-  } else {
-    tokenClient.requestAccessToken({prompt: ''});
-  }
+  // Try silent refresh only if no valid token already
+  if (!gcalToken) tokenClient.requestAccessToken({prompt: ''});
 }
 
 function connectGcal() {
@@ -2341,6 +2335,10 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
 renderHeader();
 renderHoje();
 agendaDate = today();
+
+// Restore Google token immediately (don't wait for GSI library)
+const _savedGcalToken = getSavedGcalToken();
+if (_savedGcalToken) { gcalToken = _savedGcalToken; onGcalConnected(); }
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(console.error);
