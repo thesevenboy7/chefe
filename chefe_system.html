@@ -2345,6 +2345,10 @@ agendaDate = today();
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(console.error);
 }
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') saveStateToSheets();
+});
 </script>
 </body>
 </html>
