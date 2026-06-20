@@ -118,6 +118,32 @@ html, body {
 .prog { height:3px; background:var(--border2); border-radius:2px; margin-top:8px; overflow:hidden; }
 .prog-f { height:100%; border-radius:2px; transition:width .4s; }
 
+/* DIA COMPLETO */
+.day-done-banner {
+  background: rgba(200,245,66,0.07);
+  border: 1px solid rgba(200,245,66,0.25);
+  border-radius: var(--r);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  display: none;
+  align-items: center;
+  gap: 12px;
+  animation: fadeUp .3s ease;
+}
+.day-done-banner.show { display: flex; }
+.day-done-icon {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--accent); display: flex;
+  align-items: center; justify-content: center; flex-shrink: 0;
+}
+.day-done-icon svg { width: 16px; height: 16px; }
+.day-done-txt { flex: 1; }
+.day-done-lbl { font-size: 13px; font-weight: 700; color: var(--accent); letter-spacing: 0.04em; }
+.day-done-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.met.complete { border-color: rgba(200,245,66,0.3); background: rgba(200,245,66,0.06); }
+.met.complete .met-v { color: var(--accent); }
+.prog-f.complete { box-shadow: 0 0 6px rgba(200,245,66,0.5); }
+
 /* HABIT ROWS */
 .hrow {
   display:flex; align-items:flex-start; gap:12px;
@@ -553,9 +579,19 @@ html, body {
   </div>
 
   <div class="met-grid">
-    <div class="met"><div class="met-v" id="h-pct">0%</div><div class="met-l">Dia</div><div class="prog"><div class="prog-f" id="h-bar" style="width:0%;background:var(--accent)"></div></div></div>
-    <div class="met"><div class="met-v" id="h-streak">0</div><div class="met-l">Streak</div></div>
+    <div class="met" id="h-pct-card"><div class="met-v" id="h-pct">0%</div><div class="met-l">Dia</div><div class="prog"><div class="prog-f" id="h-bar" style="width:0%;background:var(--accent)"></div></div></div>
+    <div class="met" id="h-streak-card"><div class="met-v" id="h-streak">0</div><div class="met-l">Streak</div></div>
     <div class="met"><div class="met-v" id="h-cnt">0/0</div><div class="met-l">Feitos</div></div>
+  </div>
+
+  <div class="day-done-banner" id="day-done-banner">
+    <div class="day-done-icon">
+      <svg viewBox="0 0 16 16" fill="none"><path d="M2 8l4 4 8-8" stroke="#0c0c0e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="day-done-txt">
+      <div class="day-done-lbl">DIA FECHADO</div>
+      <div class="day-done-sub" id="day-done-sub">Todos os hábitos concluídos.</div>
+    </div>
   </div>
 
   <div class="week-strip" id="week-strip"></div>
@@ -1122,9 +1158,23 @@ function updateHMetrics() {
   const total = allH.length;
   const done = Object.values(state).filter(Boolean).length;
   const pct = total > 0 ? Math.round(done / total * 100) : 0;
+  const isDone = pct === 100 && total > 0;
   document.getElementById('h-pct').textContent = pct + '%';
   document.getElementById('h-bar').style.width = pct + '%';
+  document.getElementById('h-bar').className = 'prog-f' + (isDone ? ' complete' : '');
   document.getElementById('h-cnt').textContent = done + '/' + total;
+  document.getElementById('h-pct-card').className = 'met' + (isDone ? ' complete' : '');
+  document.getElementById('h-streak-card').className = 'met' + (isDone ? ' complete' : '');
+  const banner = document.getElementById('day-done-banner');
+  if (isDone) {
+    banner.classList.add('show');
+    const isToday = hojeDate === today();
+    document.getElementById('day-done-sub').textContent = isToday
+      ? `${total} hábitos concluídos. Dia fechado.`
+      : `${total} hábitos concluídos neste dia.`;
+  } else {
+    banner.classList.remove('show');
+  }
   if (hojeDate <= today()) {
     const ex = appState.hist.findIndex(d => d.date === hojeDate);
     if (ex >= 0) appState.hist[ex].pct = pct;
