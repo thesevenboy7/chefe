@@ -1406,7 +1406,6 @@ function renderAgendaEvents() {
         <span class="event-cal cal-${ev.cal}">${ev.cal === 'work' ? 'Trabalho' : 'Pessoal'}</span>
         ${ev._recurring ? `<span style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;margin-left:6px">↻ ${ev.recurrence === 'weekly' ? 'Semanal' : 'Diário'}</span>` : ''}
         ${hasCl ? `<div class="event-has-checklist">☑ Checklist ${clDone}/${ev.checklist.length}</div>` : ''}
-        ${ev.fromGcal ? `<div style="font-size:10px;color:var(--blue);margin-top:2px;font-weight:600">GCal</div>` : ''}
       </div>
       <div class="event-actions">
         <div class="event-chk${ev.done?' on':''}" onclick="${toggleFn}">
