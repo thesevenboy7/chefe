@@ -1864,6 +1864,7 @@ async function saveStateToSheets() {
       tasks: appState.tasks,
       recurring: appState.recurring,
       agenda: appState.agenda,
+      fin: appState.fin,
     };
     const ts = new Date().toISOString();
     await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_HABITS_ID}/values/${encodeURIComponent('Estado!A2:B2')}?valueInputOption=USER_ENTERED`, {
@@ -1905,6 +1906,13 @@ async function loadStateFromSheets() {
             appState.agenda[date].push(ev);
           }
         });
+      });
+    }
+    if (payload.fin?.lan) {
+      payload.fin.lan.forEach(l => {
+        if (!appState.fin.lan.some(x => x.id === l.id)) {
+          appState.fin.lan.push(l);
+        }
       });
     }
     save();
