@@ -1340,6 +1340,7 @@ function onGcalConnected() {
   renderGcalBanner();
   fetchGcalEvents(agendaDate);
   initSheetsHeaders();
+  loadFinFromSheets();
 }
 
 function renderGcalBanner() {
@@ -1476,6 +1477,53 @@ async function syncTaskToSheets(task, acao, tab) {
   const categoria = tab === 'work' ? 'Trabalho' : 'Pessoal';
   const row = [ts, task.title, categoria, acao, task.createdDate || '', task.doneDate || ''];
   await sheetsAppendTo(SHEETS_TASKS_ID, 'Tasks!A:F', [row]);
+}
+
+async function loadFinFromSheets() {
+  if (!gcalToken) return;
+  try {
+    const mes = new Date().toISOString().slice(0, 7); // YYYY-MM
+    const curMes = parseInt(mes.slice(5, 7));
+    const curAno = parseInt(mes.slice(0, 4));
+
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_ID}/values/${encodeURIComponent('Lançamentos!A:I')}`;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${gcalToken}` } });
+    const data = await res.json();
+    const rows = (data.values || []);
+
+    const imported = [];
+    rows.forEach(row => {
+      if (row.length < 5 || isNaN(parseFloat(row[4]))) return; // skip header/malformed
+      const rowMes = parseInt(row[7]);
+      const rowAno = parseInt(row[8]);
+      if (rowMes !== curMes || rowAno !== curAno) return;
+
+      // Convert M/D/YYYY → YYYY-MM-DD
+      const parts = (row[0] || '').split('/');
+      const dataISO = parts.length === 3
+        ? `${parts[2]}-${String(parts[0]).padStart(2,'0')}-${String(parts[1]).padStart(2,'0')}`
+        : today();
+
+      imported.push({
+        id: Date.now() + Math.random(),
+        desc: row[1] || '',
+        tipo: row[2] || 'Despesa',
+        cat: row[3] || 'Outros',
+        val: parseFloat(row[4]) || 0,
+        pag: row[5] || '',
+        obs: row[6] || '',
+        data: dataISO,
+        mes,
+      });
+    });
+
+    if (imported.length === 0) return;
+    // Sheet é source of truth: substitui dados locais do mês
+    appState.fin.lan = appState.fin.lan.filter(l => l.mes !== mes);
+    appState.fin.lan.push(...imported);
+    save();
+    if (currentSec === 'financeiro') { calcFinKpis(); renderLan(); }
+  } catch(e) { console.error('loadFinFromSheets error:', e); }
 }
 
 async function appendLancamentoToSheets(lan) {
