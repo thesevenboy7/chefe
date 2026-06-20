@@ -59,12 +59,12 @@ html, body {
 }
 .header-logo { display:flex; align-items:center; gap:10px; }
 .logo-mark {
-  width:34px; height:34px;
-  background:var(--accent);
+  width:36px; height:36px;
   border-radius:10px;
-  display:flex; align-items:center; justify-content:center;
+  overflow:hidden;
+  flex-shrink:0;
 }
-.logo-mark svg { width:18px; height:18px; }
+.logo-mark img { width:36px; height:36px; display:block; object-fit:cover; }
 .logo-name {
   font-size:16px; font-weight:700;
   letter-spacing:0.08em; text-transform:uppercase; color:var(--text);
@@ -585,12 +585,7 @@ html, body {
 <div class="header">
   <div class="header-logo">
     <div class="logo-mark">
-      <svg viewBox="0 0 18 18" fill="none">
-        <rect x="2" y="2" width="6" height="6" rx="1.5" fill="#0c0c0e"/>
-        <rect x="10" y="2" width="6" height="6" rx="1.5" fill="#0c0c0e" opacity="0.5"/>
-        <rect x="2" y="10" width="6" height="6" rx="1.5" fill="#0c0c0e" opacity="0.5"/>
-        <rect x="10" y="10" width="6" height="6" rx="1.5" fill="#0c0c0e" opacity="0.3"/>
-      </svg>
+      <img src="icon.png" alt="PM">
     </div>
     <span class="logo-name">Chefe</span>
   </div>
