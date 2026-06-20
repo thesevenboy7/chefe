@@ -490,6 +490,21 @@ html, body {
 }
 ::-webkit-scrollbar { width:0; }
 
+/* SEMANA DASHBOARD */
+.semana-habit-bars { display:grid; grid-template-columns:repeat(7,1fr); gap:5px; margin-bottom:6px; }
+.semana-col { display:flex; flex-direction:column; align-items:center; gap:3px; }
+.semana-bar-wrap { height:64px; width:100%; display:flex; align-items:flex-end; background:var(--surface2); border-radius:4px; overflow:hidden; }
+.semana-bar { width:100%; min-height:2px; transition:height .4s ease; }
+.semana-bar-pct { font-size:9px; color:var(--muted); font-family:'DM Mono',monospace; line-height:1; }
+.semana-bar-day { font-size:9px; font-family:'DM Mono',monospace; font-weight:700; letter-spacing:.04em; }
+.semana-avg { font-size:11px; color:var(--muted); font-family:'DM Mono',monospace; margin-top:6px; }
+.semana-kpi-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:0; }
+.semana-kpi { background:var(--surface2); border-radius:var(--r-sm); padding:12px; border:1px solid var(--border); }
+.semana-kpi-v { font-size:22px; font-weight:800; color:var(--text); letter-spacing:-0.02em; }
+.semana-kpi-v.pos { color:var(--accent); }
+.semana-kpi-v.neg { color:var(--red); }
+.semana-kpi-l { font-size:10px; color:var(--muted); margin-top:2px; font-family:'DM Mono',monospace; text-transform:uppercase; letter-spacing:.06em; }
+
 /* HABIT EDIT MODE */
 .habit-edit-toggle {
   font-size:10px; font-weight:700; padding:5px 12px;
@@ -754,6 +769,28 @@ html, body {
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════ SEMANA -->
+<div id="sec-semana" class="sec">
+  <div class="sec-title">Semana</div>
+  <div class="sec-sub" id="semana-range"></div>
+
+  <div class="card">
+    <div class="card-lbl"><span>Hábitos</span><span id="semana-avg"></span></div>
+    <div class="semana-habit-bars" id="semana-habit-bars"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-lbl">Tasks</div>
+    <div class="semana-kpi-grid" id="semana-tasks"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-lbl">Financeiro da semana</div>
+    <div class="semana-kpi-grid" id="semana-fin-kpis" style="margin-bottom:12px"></div>
+    <div id="semana-fin-cats"></div>
+  </div>
+</div>
+
 <!-- ═══════════════════════════════════════════════════════ MANTRA -->
 <div id="sec-mantra" class="sec">
   <div class="sec-title">Mantra</div>
@@ -840,6 +877,12 @@ html, body {
       <path d="M4 6h14M4 11h9M4 16h6"/>
     </svg>
     <span class="bn-lbl">Tasks</span>
+  </button>
+  <button class="bn-btn" onclick="showSec('semana')" id="bn-semana">
+    <svg class="bn-icon" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8">
+      <rect x="2" y="14" width="3" height="5" rx="1"/><rect x="7" y="9" width="3" height="10" rx="1"/><rect x="12" y="5" width="3" height="14" rx="1"/><rect x="17" y="11" width="3" height="8" rx="1"/>
+    </svg>
+    <span class="bn-lbl">Semana</span>
   </button>
   <button class="bn-btn" onclick="showSec('financeiro')" id="bn-financeiro">
     <svg class="bn-icon" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -1020,6 +1063,7 @@ function showSec(id) {
   if (id === 'hoje') renderHoje();
   if (id === 'agenda') renderAgenda();
   if (id === 'tasks') renderTasks();
+  if (id === 'semana') renderSemana();
   if (id === 'financeiro') loadFin();
 }
 
@@ -1831,6 +1875,88 @@ function formatDate(dateStr) {
   if (!dateStr) return '';
   const d = new Date(dateStr + 'T12:00:00');
   return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`;
+}
+
+// ═══════════════════════════════════════════════════════ SEMANA DASHBOARD
+function getWeekDates() {
+  const d = new Date();
+  const dow = d.getDay();
+  const monday = new Date(d);
+  monday.setDate(d.getDate() - (dow === 0 ? 6 : dow - 1));
+  return Array.from({length:7}, (_, i) => {
+    const x = new Date(monday); x.setDate(monday.getDate() + i);
+    return x.toISOString().slice(0,10);
+  });
+}
+
+function renderSemana() {
+  const dates = getWeekDates();
+  const todayStr = today();
+
+  // Header
+  const f = new Date(dates[0]+'T12:00:00'), l = new Date(dates[6]+'T12:00:00');
+  document.getElementById('semana-range').textContent =
+    `${f.getDate()} ${MONTHS_SHORT[f.getMonth()]} — ${l.getDate()} ${MONTHS_SHORT[l.getMonth()]}`;
+
+  // Hábitos bars
+  const barsEl = document.getElementById('semana-habit-bars');
+  barsEl.innerHTML = '';
+  let total = 0, count = 0;
+  dates.forEach(date => {
+    const h = appState.hist.find(x => x.date === date);
+    const pct = date <= todayStr ? (h ? h.pct : 0) : null;
+    const isFuture = date > todayStr;
+    const isToday = date === todayStr;
+    const d = new Date(date+'T12:00:00');
+    if (!isFuture) { total += pct; count++; }
+    const color = pct >= 75 ? 'var(--accent)' : pct >= 40 ? 'var(--amber)' : 'var(--red)';
+    const col = document.createElement('div');
+    col.className = 'semana-col';
+    col.innerHTML = `
+      <div class="semana-bar-wrap">
+        <div class="semana-bar" style="height:${isFuture ? 0 : pct}%;background:${isFuture ? 'var(--border)' : color}"></div>
+      </div>
+      <div class="semana-bar-pct">${isFuture ? '' : pct+'%'}</div>
+      <div class="semana-bar-day" style="color:${isToday ? 'var(--accent)' : 'var(--muted)'}">${DAYS[d.getDay()]}</div>`;
+    barsEl.appendChild(col);
+  });
+  const avg = count > 0 ? Math.round(total / count) : 0;
+  document.getElementById('semana-avg').textContent = `Média ${avg}%`;
+
+  // Tasks
+  let tasksDone = 0, tasksPend = 0;
+  ['work','pessoal'].forEach(tab => {
+    (appState.tasks[tab] || []).forEach(t => {
+      if (t.done && t.doneDate >= dates[0] && t.doneDate <= dates[6]) tasksDone++;
+      else if (!t.done) tasksPend++;
+    });
+  });
+  document.getElementById('semana-tasks').innerHTML = `
+    <div class="semana-kpi"><div class="semana-kpi-v pos">${tasksDone}</div><div class="semana-kpi-l">Concluídas</div></div>
+    <div class="semana-kpi"><div class="semana-kpi-v">${tasksPend}</div><div class="semana-kpi-l">Pendentes</div></div>`;
+
+  // Financeiro
+  const items = (appState.fin.lan || []).filter(l => l.data >= dates[0] && l.data <= dates[6]);
+  const desp = items.filter(l => l.tipo === 'Despesa').reduce((s,l) => s+l.val, 0);
+  const rec  = items.filter(l => l.tipo === 'Receita').reduce((s,l) => s+l.val, 0);
+  document.getElementById('semana-fin-kpis').innerHTML = `
+    <div class="semana-kpi"><div class="semana-kpi-v neg">R$${desp.toLocaleString('pt-BR')}</div><div class="semana-kpi-l">Despesas</div></div>
+    <div class="semana-kpi"><div class="semana-kpi-v pos">R$${rec.toLocaleString('pt-BR')}</div><div class="semana-kpi-l">Receitas</div></div>`;
+
+  const cats = {};
+  items.filter(l => l.tipo === 'Despesa').forEach(l => { cats[l.cat] = (cats[l.cat]||0) + l.val; });
+  const top = Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,4);
+  const catsEl = document.getElementById('semana-fin-cats');
+  if (top.length === 0) {
+    catsEl.innerHTML = '<div class="empty">Nenhum lançamento esta semana.</div>';
+  } else {
+    const max = top[0][1];
+    catsEl.innerHTML = top.map(([cat, val]) => {
+      const color = Object.entries(CAT_COLORS).find(([k]) => k === cat)?.[1] || '#64748b';
+      const pct = Math.round((val/max)*100);
+      return `<div class="cat-row"><div class="cat-dot" style="background:${color}"></div><span class="cat-name">${cat}</span><div class="cat-bar-wrap"><div class="cat-bar-f" style="width:${pct}%;background:${color}"></div></div><span class="cat-val">R$${val.toLocaleString('pt-BR')}</span></div>`;
+    }).join('');
+  }
 }
 
 // ═══════════════════════════════════════════════════════ FINANCEIRO
