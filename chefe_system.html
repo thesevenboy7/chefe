@@ -1595,8 +1595,7 @@ function onGcalConnected() {
   renderGcalBanner();
   fetchGcalEvents(agendaDate);
   initSheetsHeaders();
-  loadFinFromSheets();
-  loadStateFromSheets();
+  loadStateFromSheets(); // loads fin via Estado; falls back to Sheets if Estado empty
 }
 
 function renderGcalBanner() {
@@ -1901,12 +1900,11 @@ async function loadStateFromSheets() {
         });
       });
     }
-    if (payload.fin?.lan) {
-      payload.fin.lan.forEach(l => {
-        if (!appState.fin.lan.some(x => x.id === l.id)) {
-          appState.fin.lan.push(l);
-        }
-      });
+    if (payload.fin?.lan?.length) {
+      appState.fin.lan = payload.fin.lan; // Estado is authoritative for fin
+    } else {
+      // First-time: Estado has no fin yet, fall back to Sheets Lançamentos
+      loadFinFromSheets();
     }
     save();
     renderHoje();
@@ -2159,7 +2157,7 @@ function finNavMonth(delta) {
   if (next > cur) return;
   finMonth = next;
   loadFin();
-  if (gcalToken && finMonth !== cur) loadFinFromSheets(finMonth);
+  if (gcalToken && !appState.fin.lan.some(l => l.mes === finMonth)) loadFinFromSheets(finMonth);
 }
 
 function loadFin() {
