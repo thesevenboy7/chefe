@@ -202,12 +202,13 @@ html, body {
   flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
   padding:8px 4px; border-radius:var(--r-sm);
   border:none; background:transparent; cursor:pointer; transition:all .15s;
+  color:var(--muted2); -webkit-appearance:none; appearance:none;
 }
-.bn-btn.on { background:var(--accent-dim2); }
-.bn-icon { width:22px; height:22px; }
+.bn-btn.on { background:var(--accent-dim2); color:var(--accent); }
+.bn-icon { width:22px; height:22px; flex-shrink:0; }
 .bn-lbl {
   font-size:9px; font-weight:700; letter-spacing:0.08em;
-  text-transform:uppercase; color:var(--muted);
+  text-transform:uppercase; color:inherit;
   font-family:'DM Mono',monospace;
 }
 .bn-btn.on .bn-lbl { color:var(--accent); }
@@ -908,7 +909,9 @@ html, body {
   </button>
   <button class="bn-btn" onclick="showSec('financeiro')" id="bn-financeiro">
     <svg class="bn-icon" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8">
-      <circle cx="11" cy="11" r="8"/><path d="M11 7v1.5M11 13.5V15M8.5 9.5C8.5 8.4 9.6 8 11 8s2.5.9 2.5 2c0 2-4 2-4 4 0 1.1 1.1 2 2.5 2s2.5-.9 2.5-2"/>
+      <rect x="2" y="6" width="18" height="13" rx="2"/>
+      <path d="M2 10h18"/>
+      <path d="M6 14h2M10 14h4" stroke-linecap="round"/>
     </svg>
     <span class="bn-lbl">Fin.</span>
   </button>
