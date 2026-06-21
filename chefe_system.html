@@ -319,7 +319,6 @@ html, body {
   font-family:'Syne',sans-serif; box-sizing:border-box; min-width:0;
 }
 .form-inp:focus { outline:none; border-color:var(--accent); }
-input[type="time"].form-inp { font-size:13px; padding:11px 8px; }
 .form-row { display:flex; gap:8px; }
 .form-sel {
   width:100%; font-size:13px; padding:11px 13px;
@@ -940,7 +939,9 @@ input[type="date"].lan-inp, input[type="time"].lan-inp { font-size:11px; padding
     <div class="form-row">
       <div class="form-group" style="flex:1">
         <div class="form-lbl">Horário</div>
-        <input class="form-inp" id="ev-time" type="time" />
+        <select class="form-sel" id="ev-time">
+          <option value="">— Sem hora</option>
+        </select>
       </div>
       <div class="form-group" style="flex:1">
         <div class="form-lbl">Agenda</div>
@@ -2343,6 +2344,25 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
     if (e.target === overlay) closeModal(overlay.id);
   });
 });
+
+// Populate time select with 15-min intervals
+(function() {
+  const sel = document.getElementById('ev-time');
+  if (!sel) return;
+  for (let h = 0; h < 24; h++) {
+    for (let m = 0; m < 60; m += 15) {
+      const hh = String(h).padStart(2,'0');
+      const mm = String(m).padStart(2,'0');
+      const val = `${hh}:${mm}`;
+      const label = h < 12
+        ? `${h === 0 ? 12 : h}:${mm} AM`
+        : `${h === 12 ? 12 : h-12}:${mm} PM`;
+      const opt = document.createElement('option');
+      opt.value = val; opt.textContent = label;
+      sel.appendChild(opt);
+    }
+  }
+})();
 
 // ═══════════════════════════════════════════════════════ INIT
 renderHeader();
