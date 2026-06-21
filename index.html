@@ -316,9 +316,10 @@ html, body {
   width:100%; font-size:14px; padding:11px 13px;
   border-radius:var(--r-sm); border:1px solid var(--border2);
   background:var(--surface2); color:var(--text);
-  font-family:'Syne',sans-serif;
+  font-family:'Syne',sans-serif; box-sizing:border-box; min-width:0;
 }
 .form-inp:focus { outline:none; border-color:var(--accent); }
+input[type="time"].form-inp { font-size:13px; padding:11px 8px; }
 .form-row { display:flex; gap:8px; }
 .form-sel {
   width:100%; font-size:13px; padding:11px 13px;
@@ -434,7 +435,9 @@ html, body {
   width:100%; font-size:13px; padding:9px 12px;
   border-radius:var(--r-sm); border:1px solid var(--border2);
   background:var(--surface2); color:var(--text); font-family:'Syne',sans-serif;
+  box-sizing:border-box; min-width:0;
 }
+input[type="date"].lan-inp, input[type="time"].lan-inp { font-size:11px; padding:9px 6px; }
 .lan-inp:focus { outline:none; border-color:var(--accent); }
 .lan-sel {
   width:100%; font-size:12px; padding:9px 10px; border-radius:var(--r-sm);
