@@ -1663,9 +1663,13 @@ async function pushEventToGcal(title, time, date) {
   let startObj, endObj;
   if (time) {
     const [h, m] = time.split(':').map(Number);
-    const endH = String(h + 1).padStart(2, '0');
+    // Add 1h, wrap at midnight into next day
+    const endDate = new Date(`${date}T${time}:00`);
+    endDate.setHours(endDate.getHours() + 1);
+    const endDateStr = endDate.toISOString().slice(0,10);
+    const endTimeStr = `${String(endDate.getHours()).padStart(2,'0')}:${String(endDate.getMinutes()).padStart(2,'0')}`;
     startObj = { dateTime: `${date}T${time}:00`, timeZone: tz };
-    endObj   = { dateTime: `${date}T${endH}:${String(m).padStart(2,'0')}:00`, timeZone: tz };
+    endObj   = { dateTime: `${endDateStr}T${endTimeStr}:00`, timeZone: tz };
   } else {
     startObj = { date };
     endObj   = { date };
