@@ -1900,8 +1900,18 @@ async function loadStateFromSheets() {
       Object.keys(payload.agenda).forEach(date => {
         if (!appState.agenda[date]) appState.agenda[date] = [];
         payload.agenda[date].forEach(ev => {
-          if (!appState.agenda[date].some(e => e.id === ev.id)) {
-            appState.agenda[date].push(ev);
+          const dup = appState.agenda[date].some(e =>
+            e.id === ev.id || (ev.gcalId && e.gcalId === ev.gcalId)
+          );
+          if (!dup) appState.agenda[date].push(ev);
+          // If GCal imported version exists but has no checklist, replace with Estado version
+          else if (ev.checklist?.length) {
+            const idx = appState.agenda[date].findIndex(e =>
+              e.id === ev.id || (ev.gcalId && e.gcalId === ev.gcalId)
+            );
+            if (idx >= 0 && !appState.agenda[date][idx].checklist?.length) {
+              appState.agenda[date][idx] = ev;
+            }
           }
         });
       });
